@@ -198,20 +198,26 @@ export default function Dashboard() {
               View More <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="space-y-3">
-            {latestReplies.map((reply, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-semibold">
-                  {reply.name.charAt(0)}
+          {latestReplies.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">No replies yet</p>
+          ) : (
+            <div className="space-y-3">
+              {latestReplies.map((reply, i) => (
+                <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-semibold">
+                    {reply.sender_name?.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900">{reply.sender_name}</div>
+                    <div className="text-xs text-gray-500 truncate">{reply.body}</div>
+                  </div>
+                  <span className="text-xs text-gray-400 flex-shrink-0">
+                    {reply.created_date ? new Date(reply.created_date).toLocaleDateString() : ""}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900">{reply.name}</div>
-                  <div className="text-xs text-gray-500 truncate">{reply.message}</div>
-                </div>
-                <span className="text-xs text-gray-400 flex-shrink-0">{reply.time}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
