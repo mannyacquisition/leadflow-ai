@@ -275,7 +275,7 @@ export default function SignalsAgents() {
                         >
                           <Pencil className="w-3.5 h-3.5" /> Edit
                         </button>
-                        <ActionsMenu agent={agent} onEdit={() => setWizardMode(agent)} onRefresh={fetchAgents} />
+                        <ActionsMenu agent={agent} onEdit={() => setWizardMode(agent)} />
                       </div>
                     </td>
                   </tr>
