@@ -11,11 +11,13 @@ Deno.serve(async (req) => {
     const { action, conversation_id, message, org_id } = await req.json();
 
     if (action === "create_conversation") {
+      // Auto-derive org_id from the authenticated user — never require the frontend to pass it
+      const effectiveOrgId = org_id || user.org_id || user.email || "default";
       const conv = await base44.agents.createConversation({
         agent_name: "monara",
-        metadata: { org_id: org_id || "default", user_id: user.id }
+        metadata: { org_id: effectiveOrgId, user_id: user.id || user.email }
       });
-      return Response.json(conv);
+      return Response.json({ ...conv, org_id: effectiveOrgId });
     }
 
     if (action === "send_message") {
@@ -25,8 +27,12 @@ Deno.serve(async (req) => {
       const conv = await base44.agents.getConversation(conversation_id);
       const messageCountBefore = (conv?.messages || []).length;
 
+      // Inject org_id context so Monara never has to ask for it
+      const effectiveOrgId = conv?.metadata?.org_id || user.org_id || user.email || "default";
+      const enrichedMessage = `[Session context: org_id="${effectiveOrgId}", user="${user.full_name || user.email}"]\n\n${message}`;
+
       // Send the message
-      await base44.agents.addMessage(conv, { role: "user", content: message });
+      await base44.agents.addMessage(conv, { role: "user", content: enrichedMessage });
 
       // Poll for the assistant response (up to 30s)
       let assistantMsg = null;
