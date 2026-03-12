@@ -137,19 +137,61 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
   const [form, setForm] = useState(initialForm || defaultForm);
   const [saving, setSaving] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [orgId, setOrgId] = useState(editingAgent?.org_id || null);
+
+  // ── Load org_id from current user's org settings ──────────────────────────
+  useEffect(() => {
+    if (!orgId) {
+      base44.auth.me().then(user => {
+        if (user?.email) {
+          base44.entities.OrganizationSettings.filter({ org_id: user.email })
+            .then(results => {
+              const id = results[0]?.org_id || user.email;
+              setOrgId(id);
+              setForm(f => ({ ...f, org_id: id }));
+            })
+            .catch(() => {
+              setOrgId(user.email);
+              setForm(f => ({ ...f, org_id: user.email }));
+            });
+        }
+      });
+    }
+  }, []);
+
+  // ── Real-time sync: re-fetch if backend changes this agent ────────────────
+  useEffect(() => {
+    if (!editingAgent?.id) return;
+    const unsub = base44.entities.SignalAgent.subscribe((event) => {
+      if (event.id === editingAgent.id && event.type === 'update' && event.data) {
+        // Merge remote changes into local form (non-destructively)
+        setForm(prev => ({ ...prev, ...event.data }));
+      }
+    });
+    return unsub;
+  }, [editingAgent?.id]);
 
   const handleSave = async () => {
     setSaving(true);
+    const resolvedOrgId = orgId || form.org_id || editingAgent?.org_id;
+    if (!resolvedOrgId) {
+      toast.error("Organization ID missing. Please refresh and try again.");
+      setSaving(false);
+      return;
+    }
     try {
-      const payload = { ...form };
-      if (editingAgent) {
-        await base44.entities.SignalAgent.update(editingAgent.id, payload);
+      const response = await base44.functions.invoke('upsertSignalAgent', {
+        ...(editingAgent?.id ? { agent_id: editingAgent.id } : {}),
+        org_id: resolvedOrgId,
+        ...form,
+      });
+      if (response.data?.success) {
+        toast.success("Agent saved!");
+        onSaved?.();
       } else {
-        await base44.entities.SignalAgent.create({ ...payload, status: "active", leads_generated: 0 });
+        toast.error(response.data?.error || "Save failed");
       }
-      toast.success("Agent saved!");
-      onSaved?.();
-    } catch {
+    } catch (err) {
       toast.error("Save failed");
     }
     setSaving(false);
