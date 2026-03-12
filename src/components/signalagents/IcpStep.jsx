@@ -95,11 +95,26 @@ export default function IcpStep({ form, setForm }) {
     setForm(f => ({ ...f, [field]: [...(f[field] || []), value] }));
   };
   const removeFromArr = (field, idx) => setForm(f => ({ ...f, [field]: f[field].filter((_, i) => i !== idx) }));
+  const ALL_OPTIONS = {
+    target_locations: "All locations",
+    target_industries: "All industries",
+    company_sizes: "All company sizes",
+    company_types: "All company types",
+  };
+
   const toggleInArr = (field, value) => {
     const arr = form[field] || [];
+    const allOption = ALL_OPTIONS[field];
+    // If selecting the "All" option, clear everything else and just set "All"
+    if (value === allOption) {
+      setForm(f => ({ ...f, [field]: arr.includes(allOption) ? [] : [allOption] }));
+      return;
+    }
+    // If selecting a specific option, remove the "All" option if present
+    const withoutAll = arr.filter(v => v !== allOption);
     setForm(f => ({
       ...f,
-      [field]: arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value],
+      [field]: withoutAll.includes(value) ? withoutAll.filter(v => v !== value) : [...withoutAll, value],
     }));
   };
 
