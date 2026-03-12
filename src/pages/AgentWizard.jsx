@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Check } from "lucide-react";
 import { toast } from "sonner";
 import IntentSignalsAccordion from "@/components/signalagents/IntentSignalsAccordion";
 import IcpStep from "@/components/signalagents/IcpStep";
 import LeadsStep from "@/components/signalagents/LeadsStep";
+import HowItWorksModal from "@/components/signalagents/HowItWorksModal";
 
 const steps = [
   { num: 1, label: "ICP", sub: "Ideal Customer Profile" },
