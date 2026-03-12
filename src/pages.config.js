@@ -57,6 +57,7 @@ import Insights from './pages/Insights';
 import Settings from './pages/Settings';
 import Integrations from './pages/Integrations';
 import CommandCenter from './pages/CommandCenter';
+import LeadDatabase from './pages/LeadDatabase';
 import __Layout from './Layout.jsx';
 
 
@@ -71,6 +72,7 @@ export const PAGES = {
     "Settings": Settings,
     "Integrations": Integrations,
     "CommandCenter": CommandCenter,
+    "LeadDatabase": LeadDatabase,
 }
 
 export const pagesConfig = {
