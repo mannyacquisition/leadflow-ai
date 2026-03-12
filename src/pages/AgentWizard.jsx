@@ -86,11 +86,49 @@ function StepItem({ step, activeStep, onClick }) {
   );
 }
 
+// ── Inline editable name ──────────────────────────────────────────────────────
+function InlineAgentName({ name, agentId, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(name);
+  const inputRef = useRef(null);
+
+  const startEdit = () => { setVal(name); setEditing(true); setTimeout(() => inputRef.current?.select(), 0); };
+
+  const save = async () => {
+    setEditing(false);
+    if (!val.trim() || val === name) return;
+    onChange(val.trim());
+    if (agentId) {
+      await base44.entities.SignalAgent.update(agentId, { name: val.trim() });
+    }
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onBlur={save}
+        onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
+        className="text-orange-500 font-bold text-xl underline decoration-orange-400 underline-offset-2 border-b-2 border-orange-400 outline-none bg-transparent min-w-0 w-48"
+      />
+    );
+  }
+
+  return (
+    <button onClick={startEdit} className="text-orange-500 underline decoration-orange-400 underline-offset-2 hover:opacity-80 transition-opacity font-bold text-xl">
+      {name}
+    </button>
+  );
+}
+
 // ── Main Wizard ───────────────────────────────────────────────────────────────
 export default function AgentWizard({ editingAgent, initialForm, onSaved, onCancel }) {
   const [activeStep, setActiveStep] = useState(1);
   const [form, setForm] = useState(initialForm || defaultForm);
   const [saving, setSaving] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
