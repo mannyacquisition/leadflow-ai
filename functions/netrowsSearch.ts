@@ -9,10 +9,14 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { name, job_titles, locations, keywords, industries, page = 1, limit = 25 } = body;
+    const { name, job_titles, locations, keywords, industries, page = 1, limit = 25, org_id } = body;
 
-    // Fetch org settings to get Netrows API key and credits
-    const settings = await base44.asServiceRole.entities.OrganizationSettings.list();
+    if (!org_id) {
+      return Response.json({ error: 'org_id is required' }, { status: 400 });
+    }
+
+    // Fetch org settings scoped to this org only
+    const settings = await base44.asServiceRole.entities.OrganizationSettings.filter({ org_id });
     const orgSettings = settings[0];
 
     if (!orgSettings?.api_key_netrows) {
