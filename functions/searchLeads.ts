@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'search_query is required' }, { status: 400 });
     }
 
-    // Resolve org_id from session if not passed
-    const effectiveOrgId = org_id || user.org_id || user.email;
+    // Resolve org_id — always prefer explicitly passed value, fallback to 'seed'
+    const effectiveOrgId = org_id || user.org_id || 'seed';
 
     if (!effectiveOrgId) {
       return Response.json({ error: 'org_id could not be resolved from session' }, { status: 400 });

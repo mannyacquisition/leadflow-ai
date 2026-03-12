@@ -34,7 +34,8 @@ Deno.serve(async (req) => {
     const { lead_id, org_id, append_activity, ...fields } = body;
 
     if (!lead_id) return Response.json({ error: 'lead_id is required' }, { status: 400 });
-    if (!org_id) return Response.json({ error: 'org_id is required' }, { status: 400 });
+    // Resolve org_id — always prefer explicitly passed value, fallback to 'seed'
+    const effectiveOrgId = org_id || user.org_id || 'seed';
 
     // Security: verify lead belongs to this org
     let lead;
