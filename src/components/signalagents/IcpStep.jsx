@@ -209,46 +209,142 @@ export default function IcpStep({ form, setForm }) {
       </div>
 
       {/* Lead Matching Mode */}
-      <div className="mt-6 flex items-start justify-end gap-4">
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
-              Lead Matching Mode
-              <Info className="w-3.5 h-3.5 text-gray-400" />
-            </label>
-          </div>
-          {/* Toggle switch */}
-          <div className="flex items-center gap-3 bg-gray-100 rounded-full p-1">
-            <button
-              onClick={() => setForm(f => ({ ...f, lead_matching_mode: 20 }))}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${!highPrecision ? "bg-white shadow text-gray-800" : "text-gray-500"}`}
-            >
-              🔍 Discovery
-            </button>
-            <button
-              onClick={() => setForm(f => ({ ...f, lead_matching_mode: 80 }))}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${highPrecision ? "text-white shadow" : "text-gray-500"}`}
-              style={highPrecision ? { backgroundColor: "#ff5a1f" } : {}}
-            >
-              High Precision 🎯
-            </button>
-          </div>
-          {highPrecision && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 max-w-xs">
-              <span className="text-red-500 mt-0.5 text-sm">🎯</span>
-              <div>
-                <p className="text-xs font-semibold text-red-700">Strict ICP – Fewer, better leads</p>
-                <p className="text-xs text-red-500">Only the strongest matches</p>
-              </div>
-            </div>
-          )}
+      <div className="mt-6">
+        <label className="text-sm font-semibold text-gray-800 flex items-center gap-1 mb-3">
+          Lead Matching Mode
+          <Info className="w-3.5 h-3.5 text-gray-400" />
+        </label>
+        <div className="flex items-center gap-4">
+          {/* Discovery side */}
+          <button
+            onClick={() => setForm(f => ({ ...f, lead_matching_mode: 20 }))}
+            className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${!highPrecision ? "text-blue-600" : "text-gray-400"}`}
+          >
+            🔍 Discovery
+          </button>
+          {/* Toggle pill */}
+          <button
+            onClick={() => setForm(f => ({ ...f, lead_matching_mode: highPrecision ? 20 : 80 }))}
+            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${highPrecision ? "bg-orange-500" : "bg-gray-300"}`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${highPrecision ? "translate-x-5" : "translate-x-0"}`}
+            />
+          </button>
+          {/* High Precision side */}
+          <button
+            onClick={() => setForm(f => ({ ...f, lead_matching_mode: 80 }))}
+            className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${highPrecision ? "text-orange-500" : "text-gray-400"}`}
+          >
+            High Precision 🎯
+          </button>
         </div>
+
+        {/* Info box */}
+        {!highPrecision ? (
+          <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 mt-3 max-w-sm">
+            <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-blue-700">Broader ICP – More leads</p>
+              <p className="text-xs text-blue-500">Finds opportunities you wouldn't normally target</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 mt-3 max-w-sm">
+            <Info className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-red-700">Strict ICP – Fewer, better leads</p>
+              <p className="text-xs text-red-500">Only the strongest matches</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Advanced filters */}
-      <div className="mt-4 text-center">
-        <button className="text-xs text-orange-500 hover:text-orange-600">Advanced filters ▾</button>
+      {/* Advanced filters toggle */}
+      <div className="mt-5 text-center">
+        <button
+          onClick={() => setAdvancedOpen(o => !o)}
+          className="text-sm font-medium hover:opacity-80 transition-opacity"
+          style={{ color: "#e53935" }}
+        >
+          Advanced filters {advancedOpen ? "^" : "▾"}
+        </button>
       </div>
+
+      {/* Advanced filters panel */}
+      {advancedOpen && (
+        <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-5 border-t pt-5">
+          {/* LEFT: Additional Criteria + Mandatory keywords */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5 flex items-center gap-1">
+                Additional Criteria (Optional) <Info className="w-3.5 h-3.5 text-gray-400" />
+              </label>
+              <textarea
+                value={form.additional_criteria || ""}
+                onChange={e => {
+                  if (e.target.value.length <= 200)
+                    setForm(f => ({ ...f, additional_criteria: e.target.value }));
+                }}
+                rows={5}
+                placeholder="Any additional criteria or specific requirements for your ideal customer. This will be sent to our AI Scoring system and used as a prompt to evaluate leads. e.g. specific sub-industries, cities to target, or exclusions to avoid"
+                className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-400 text-gray-700"
+              />
+              <div className="text-right text-xs text-gray-400 mt-1">
+                {(form.additional_criteria || "").length}/200
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5 flex items-center gap-1">
+                Mandatory keywords <Info className="w-3.5 h-3.5 text-gray-400" />
+              </label>
+              <TextAddInput
+                placeholder="e.g., AI, Machine Learning, etc."
+                onAdd={v => addToArr("mandatory_keywords", v)}
+              />
+              <PillList
+                items={form.mandatory_keywords || []}
+                onRemove={i => removeFromArr("mandatory_keywords", i)}
+              />
+            </div>
+          </div>
+
+          {/* RIGHT: Checkboxes */}
+          <div className="space-y-5">
+            {[
+              {
+                field: "exclude_service_providers",
+                label: "Exclude service providers, freelancers, and consultants",
+                sub: "Filter out agencies, consultants, and B2B service companies from your results",
+              },
+              {
+                field: "skip_icp_filtering",
+                label: "Skip ICP Filtering & Scoring",
+                sub: "If checked, ICP filtering and scoring will be skipped for this agent, and all found leads will be added.",
+              },
+              {
+                field: "include_open_to_work",
+                label: "Include Open to Work Profiles",
+                sub: "If not checked, profiles with \"Open to Work\" status will be excluded from the results.",
+              },
+            ].map(({ field, label, sub }) => (
+              <label key={field} className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={!!form[field]}
+                  onChange={e => setForm(f => ({ ...f, [field]: e.target.checked }))}
+                  className="w-4 h-4 mt-0.5 flex-shrink-0 accent-orange-500 rounded"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800 group-hover:text-gray-900">{label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
