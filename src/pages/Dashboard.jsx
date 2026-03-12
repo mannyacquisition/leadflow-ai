@@ -79,18 +79,10 @@ export default function Dashboard() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#fff3ef" }}>
               <Zap className="w-4 h-4" style={{ color: "#ff5a1f" }} />
             </div>
-            <span className="text-sm font-medium text-gray-600">Next actions</span>
+            <span className="text-sm font-medium text-gray-600">Total Leads</span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">41</div>
-          <div className="text-xs text-gray-400 mt-1">Pending tasks</div>
-          <div className="mt-3 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-orange-400"></span>
-            <span className="text-xs text-orange-500">Next launch → 16 hours</span>
-          </div>
-          <div className="flex gap-3 mt-2 text-xs text-gray-500">
-            <span>👥 27 Invitations</span>
-            <span>💬 14 Messages</span>
-          </div>
+          <div className="text-3xl font-bold text-gray-900">{stats.totalLeads}</div>
+          <div className="text-xs text-gray-400 mt-1">In your CRM</div>
         </div>
 
         <div className="bg-white rounded-xl border p-5">
@@ -100,8 +92,8 @@ export default function Dashboard() {
             </div>
             <span className="text-sm font-medium text-gray-600">Hot Opportunities</span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">723</div>
-          <div className="text-xs text-gray-400 mt-1">Detected</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.hotLeads}</div>
+          <div className="text-xs text-gray-400 mt-1">🔥 Score 3 leads</div>
         </div>
 
         <div className="bg-white rounded-xl border p-5">
@@ -111,7 +103,8 @@ export default function Dashboard() {
             </div>
             <span className="text-sm font-medium text-gray-600">Leads Engaged</span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">285</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.contacted}</div>
+          <div className="text-xs text-gray-400 mt-1">Contacted or approved</div>
         </div>
 
         <div className="bg-white rounded-xl border p-5">
@@ -121,7 +114,8 @@ export default function Dashboard() {
             </div>
             <span className="text-sm font-medium text-gray-600">Conversations Started</span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">103</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.replies}</div>
+          <div className="text-xs text-gray-400 mt-1">Inbound replies</div>
         </div>
       </div>
 
