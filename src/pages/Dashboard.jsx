@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Zap, MessageSquare, Users, ChevronRight, Flame } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import InsightsPanel from "@/components/dashboard/InsightsPanel";
+import SystemHealthBadge from "@/components/dashboard/SystemHealthBadge";
 
 const activityData = [
   { date: "Jan 18", leads: 20, invitations: 15, messages: 10 },
