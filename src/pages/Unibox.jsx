@@ -1,42 +1,165 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Send, Search, Filter, Edit, Linkedin, Globe } from "lucide-react";
-
-const mockConversations = [
-  { id: "1", name: "Adrian B. Siggerud", preview: "Adrian, noticed you...", time: "8 hours ago", unread: true, avatar: "A", title: "Founder, CEO & Board Director", company: "Campaign Shark", company_size: "1 employee", signal: "Just engaged with your profile", industry: "Computer Software", location: "Norway", website: "https://adsplayground.com", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "8 hours ago", body: `Adrian, noticed you checked out my profile.\n\nQuick q - how many times have you re-explained your product and ICP to GPT/ Claude this week?\n\nRecently built GrowthCodex, AI consultant that generates your strategy and builds your assets in one click.\n\nDifferent how? it's built on private benchmark data that YC uses, and $100M ARR SaaS playbooks\n\nSaved our done-for-you clients 20+ hrs a week and $200k/yr in payroll.\n\nLaunching next Monday with 20 founding beta spots. Reply 'yes' if interested.` }] },
-  { id: "2", name: "Meg Bear", preview: "Meg, saw you engaging...", time: "8 hours ago", unread: false, avatar: "M", title: "VP of Product", company: "Oracle", company_size: "10,000+ employees", signal: "Liked your LinkedIn post", industry: "Enterprise Software", location: "San Francisco, CA", website: "https://oracle.com", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "8 hours ago", body: `Meg, saw you engaging with my post on AI-powered outreach.\n\nThought you'd appreciate a direct example — we helped a SaaS team cut their outbound research time by 80% using our AI workflow.\n\nWould love to share the playbook if useful?` }] },
-  { id: "3", name: "Michael Williamson", preview: "Michael, noticed you're...", time: "8 hours ago", unread: false, avatar: "MW", title: "Head of Sales", company: "Stripe", company_size: "5,000 employees", signal: "Visited your profile", industry: "FinTech", location: "New York, NY", website: "https://stripe.com", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "8 hours ago", body: `Michael, noticed you're scaling the sales team at Stripe.\n\nWe've been helping revenue leaders automate their outbound prospecting — saving 15+ hours per SDR per week.\n\nOpen to a quick 15 min to see if it's relevant?` }] },
-  { id: "4", name: "Harshul Gupta", preview: "Will the model be trained on...", time: "a day ago", unread: false, avatar: "H", hot: true, title: "AI Research Lead", company: "DeepMind", company_size: "1,000 employees", signal: "Replied to your message", industry: "AI / ML", location: "London, UK", website: "https://deepmind.com", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "2 days ago", body: `Harshul, loved your recent paper on RLHF.\n\nQuick question - are you exploring ways to apply this to enterprise sales intelligence?\n\nWe're building something adjacent and would love your perspective.` }, { id: "m2", role: "inbound", sender: "Harshul Gupta", time: "a day ago", body: "Will the model be trained on domain-specific data? That's the key differentiator in my experience." }] },
-  { id: "5", name: "Hugo Pochet", preview: "Hugo, saw your post on col...", time: "a day ago", unread: false, avatar: "HP", title: "Co-Founder", company: "Slite", company_size: "50 employees", signal: "Commented on your post", industry: "SaaS", location: "Paris, France", website: "https://slite.com", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "a day ago", body: `Hugo, saw your post on collaborative documentation tools.\n\nWe're helping SaaS founders like you automate their GTM content — think AI-generated onboarding sequences, outreach, and more.\n\nWorth a look?` }] },
-  { id: "6", name: "Dmytro Nasyrov, PhD", preview: "Dmytro - if helpful, I can...", time: "a day ago", unread: false, avatar: "D", title: "CTO", company: "Grammarly", company_size: "800 employees", signal: "Followed you on LinkedIn", industry: "NLP / AI", location: "Kyiv, Ukraine", website: "https://grammarly.com", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "a day ago", body: `Dmytro - if helpful, I can share a case study on how we reduced engineering onboarding time by 60% using AI documentation flows.\n\nLet me know if that's useful context for your team.` }] },
-  { id: "7", name: "Angelo Kahloun", preview: "Angelo - if helpful, I can shar...", time: "a day ago", unread: false, avatar: "AK", title: "Sales Director", company: "HubSpot", company_size: "7,000 employees", signal: "Viewed your company page", industry: "CRM / Sales Tech", location: "Boston, MA", website: "https://hubspot.com", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "a day ago", body: `Angelo - if helpful, I can share how we helped a HubSpot partner agency 3x their pipeline in 90 days using AI-driven outreach sequences.\n\nHappy to forward the breakdown?` }] },
-  { id: "8", name: "Katarina Perisic", preview: "Katarina, saw you engaging...", time: "a day ago", unread: false, avatar: "K", title: "Marketing Lead", company: "Notion", company_size: "500 employees", signal: "Liked 3 of your posts", industry: "Productivity SaaS", location: "Belgrade, Serbia", website: "https://notion.so", messages: [{ id: "m1", role: "outbound", sender: "Manny Artino", time: "a day ago", body: `Katarina, saw you engaging with multiple posts on AI-driven marketing.\n\nWe're building exactly that — AI that writes, personalizes, and sends your outbound campaigns.\n\nInterested in an early access invite?` }] },
-];
+import { Send, Search, Filter, Edit, Linkedin, Globe, Loader2, Bot, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Unibox() {
-  const [conversations] = useState(mockConversations);
-  const [selectedConv, setSelectedConv] = useState(mockConversations[0]);
-  const [messagesByConv, setMessagesByConv] = useState({});
+  const [leads, setLeads] = useState([]);
+  const [messagesByLead, setMessagesByLead] = useState({});
+  const [selectedLead, setSelectedLead] = useState(null);
   const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [user, setUser] = useState(null);
   const bottomRef = useRef(null);
 
   useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+    loadData();
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selectedConv, messagesByConv]);
+  }, [selectedLead, messagesByLead]);
 
-  const currentMessages = messagesByConv[selectedConv?.id] ?? selectedConv?.messages ?? [];
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load all messages, group by lead
+      const [allMessages, allLeads] = await Promise.all([
+        base44.entities.Message.list("-created_date", 500),
+        base44.entities.Lead.list("-created_date", 200),
+      ]);
 
-  const sendMessage = () => {
-    if (!newMessage.trim() || !selectedConv) return;
-    const updated = [...currentMessages, {
-      id: Date.now().toString(),
-      role: "outbound",
-      sender: "Manny Artino",
-      time: "Just now",
-      body: newMessage,
-    }];
-    setMessagesByConv(prev => ({ ...prev, [selectedConv.id]: updated }));
+      // Group messages by lead_id
+      const byLead = {};
+      for (const msg of allMessages) {
+        const key = msg.lead_id || msg.sender_name;
+        if (!byLead[key]) byLead[key] = [];
+        byLead[key].push(msg);
+      }
+      // Sort each conversation oldest first
+      for (const key of Object.keys(byLead)) {
+        byLead[key].sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+      }
+      setMessagesByLead(byLead);
+
+      // Build conversation list: leads that have messages, or inbound senders
+      const leadsWithMessages = allLeads.filter(l => byLead[l.id]?.length > 0);
+
+      // Also add leads from inbound messages that may not have a Lead record
+      const leadIds = new Set(leadsWithMessages.map(l => l.id));
+      const standaloneMessages = allMessages.filter(m => m.lead_id && !leadIds.has(m.lead_id));
+      const standaloneLeadIds = [...new Set(standaloneMessages.map(m => m.lead_id))];
+
+      const standaloneLeads = standaloneLeadIds.map(id => {
+        const msgs = byLead[id] || [];
+        const latest = msgs[msgs.length - 1] || msgs[0];
+        return {
+          id,
+          name: latest?.sender_name || latest?.recipient_name || "Unknown",
+          job_title: null,
+          company: null,
+          avatar_url: null,
+          _isSynthetic: true,
+        };
+      });
+
+      const allConvLeads = [...leadsWithMessages, ...standaloneLeads];
+      // Sort by latest message date
+      allConvLeads.sort((a, b) => {
+        const aLatest = (byLead[a.id] || []).slice(-1)[0]?.created_date || "";
+        const bLatest = (byLead[b.id] || []).slice(-1)[0]?.created_date || "";
+        return bLatest.localeCompare(aLatest);
+      });
+
+      setLeads(allConvLeads);
+      if (allConvLeads.length > 0 && !selectedLead) {
+        setSelectedLead(allConvLeads[0]);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load inbox");
+    }
+    setLoading(false);
+  };
+
+  // Real-time subscription
+  useEffect(() => {
+    const unsub = base44.entities.Message.subscribe((event) => {
+      if (event.type === "create") {
+        const msg = event.data;
+        const key = msg.lead_id || msg.sender_name;
+        setMessagesByLead(prev => {
+          const existing = prev[key] || [];
+          return { ...prev, [key]: [...existing, msg] };
+        });
+        // If it's a Monara alert / inbound, refresh lead list
+        if (msg.direction === "inbound") {
+          loadData();
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const handleSend = async () => {
+    if (!newMessage.trim() || !selectedLead || sending) return;
+    setSending(true);
+
+    const orgId = selectedLead.org_id || "default";
+
+    // Optimistic update
+    const optimisticMsg = {
+      id: `opt-${Date.now()}`,
+      lead_id: selectedLead.id,
+      sender_name: user?.full_name || "You",
+      recipient_name: selectedLead.name,
+      body: newMessage.trim(),
+      channel: "linkedin",
+      direction: "outbound",
+      created_date: new Date().toISOString(),
+      is_read: true,
+    };
+    setMessagesByLead(prev => ({
+      ...prev,
+      [selectedLead.id]: [...(prev[selectedLead.id] || []), optimisticMsg],
+    }));
     setNewMessage("");
+
+    try {
+      await base44.functions.invoke("sendMessage", {
+        lead_id: selectedLead.id,
+        org_id: orgId,
+        body: optimisticMsg.body,
+        channel: "linkedin",
+      });
+      toast.success("Message sent");
+    } catch (e) {
+      toast.error("Failed to send — saved locally");
+    }
+    setSending(false);
+  };
+
+  const filteredLeads = leads.filter(l =>
+    !searchTerm ||
+    l.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    l.company?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const currentMessages = selectedLead ? (messagesByLead[selectedLead.id] || []) : [];
+  const latestMessage = currentMessages[currentMessages.length - 1];
+  const hasUnread = currentMessages.some(m => m.direction === "inbound" && !m.is_read);
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffH = (now - d) / 3600000;
+    if (diffH < 1) return "Just now";
+    if (diffH < 24) return `${Math.floor(diffH)}h ago`;
+    return d.toLocaleDateString();
   };
 
   return (
@@ -45,13 +168,21 @@ export default function Unibox() {
       <div className="px-6 py-4 border-b bg-white flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Unibox</h1>
-          <p className="text-sm text-gray-500">Unified inbox for all your conversations</p>
+          <p className="text-sm text-gray-500">Unified inbox — all real conversations</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>⚙️</span>
-          <span className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs">M</div>
-            Manny Artino ▾
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadData}
+            className="p-2 rounded-lg border text-gray-500 hover:bg-gray-50"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <span className="flex items-center gap-1.5 text-sm text-gray-500">
+            <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs">
+              {user?.full_name?.charAt(0) || "U"}
+            </div>
+            {user?.full_name || "You"} ▾
           </span>
         </div>
       </div>
@@ -59,107 +190,144 @@ export default function Unibox() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Conversation List */}
         <div className="w-64 border-r bg-white flex flex-col flex-shrink-0">
-          <div className="p-3 border-b">
-            <div className="flex items-center justify-between mb-2">
+          <div className="p-3 border-b space-y-2">
+            <div className="flex items-center justify-between">
               <span className="font-semibold text-sm text-gray-900">Conversations</span>
               <div className="flex gap-2 text-gray-400">
                 <Filter className="w-4 h-4 cursor-pointer hover:text-gray-600" />
-                <Search className="w-4 h-4 cursor-pointer hover:text-gray-600" />
               </div>
             </div>
-            <div className="text-xs text-gray-400">{conversations.length} conversation(s)</div>
-          </div>
-
-          <div className="p-3 border-b">
-            <button className="w-full flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-              <Edit className="w-4 h-4" /> Compose
-            </button>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <input
+                className="w-full pl-7 pr-3 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="text-xs text-gray-400">{filteredLeads.length} conversation(s)</div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {conversations.map(conv => (
-              <div
-                key={conv.id}
-                onClick={() => setSelectedConv(conv)}
-                className={`p-3 flex items-start gap-2.5 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 ${
-                  selectedConv?.id === conv.id ? "bg-orange-50 border-l-2 border-l-orange-500" : ""
-                }`}
-              >
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
-                  style={{ backgroundColor: "#ff5a1f" }}>
-                  {conv.avatar}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm truncate ${conv.unread ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}>
-                      {conv.name}
-                    </span>
-                    <span className="text-xs text-gray-400 flex-shrink-0 ml-1">{conv.time}</span>
-                  </div>
-                  <div className="text-xs text-gray-500 truncate flex items-center gap-1">
-                    {conv.hot && <span>🔥</span>}
-                    {conv.preview}
-                  </div>
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-orange-400" />
               </div>
-            ))}
+            ) : filteredLeads.length === 0 ? (
+              <div className="p-4 text-sm text-gray-400 text-center">
+                No conversations yet.<br />
+                <span className="text-xs">Messages will appear here when leads reply or drafts are created.</span>
+              </div>
+            ) : filteredLeads.map(lead => {
+              const msgs = messagesByLead[lead.id] || [];
+              const latest = msgs[msgs.length - 1];
+              const isSelected = selectedLead?.id === lead.id;
+              const unread = msgs.some(m => m.direction === "inbound" && !m.is_read);
+              const isMonara = latest?.sender_name === "Monara AI";
+
+              return (
+                <div
+                  key={lead.id}
+                  onClick={() => setSelectedLead(lead)}
+                  className={`p-3 flex items-start gap-2.5 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 ${
+                    isSelected ? "bg-orange-50 border-l-2 border-l-orange-500" : ""
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 ${isMonara ? "bg-orange-500" : "bg-orange-400"}`}>
+                    {isMonara ? <Bot className="w-4 h-4" /> : lead.name?.charAt(0) || "?"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm truncate ${unread ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}>
+                        {lead.name}
+                      </span>
+                      <span className="text-xs text-gray-400 flex-shrink-0 ml-1">
+                        {formatTime(latest?.created_date)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate flex items-center gap-1">
+                      {unread && <span className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />}
+                      {latest?.body?.substring(0, 50) || "No messages"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Middle: Chat */}
         <div className="flex-1 flex flex-col bg-gray-50">
-          {selectedConv && (
+          {!selectedLead ? (
+            <div className="flex-1 flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <div className="text-4xl mb-2">💬</div>
+                <p className="font-medium">Select a conversation</p>
+              </div>
+            </div>
+          ) : (
             <>
               <div className="px-4 py-3 bg-white border-b flex items-center gap-2">
-                <span className="font-semibold text-gray-900">{selectedConv.name}</span>
-                <Linkedin className="w-4 h-4 text-blue-600" />
+                <span className="font-semibold text-gray-900">{selectedLead.name}</span>
+                {selectedLead.linkedin_url && <Linkedin className="w-4 h-4 text-blue-600" />}
                 <span className="text-xs text-gray-400">{currentMessages.length} message(s)</span>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {currentMessages.map(msg => (
-                  <div key={msg.id} className={`flex ${msg.role === "outbound" ? "justify-end" : "justify-start"}`}>
-                    <div className="max-w-lg">
-                      <div className="flex items-center gap-2 mb-1 text-xs text-gray-400">
-                        <span>{msg.time}</span>
-                        <span>{msg.sender}</span>
-                      </div>
-                      <div className={`rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                        msg.role === "outbound"
-                          ? "bg-orange-50 text-gray-800 border border-orange-100"
-                          : "bg-white text-gray-800 border"
-                      }`}>
-                        {msg.body}
+                {currentMessages.map((msg, idx) => {
+                  const isMonara = msg.sender_name === "Monara AI";
+                  return (
+                    <div key={msg.id || idx} className={`flex ${msg.direction === "outbound" ? "justify-end" : "justify-start"}`}>
+                      <div className="max-w-lg">
+                        <div className="flex items-center gap-2 mb-1 text-xs text-gray-400">
+                          {isMonara && <Bot className="w-3 h-3 text-orange-500" />}
+                          <span>{formatTime(msg.created_date)}</span>
+                          <span className="font-medium">{msg.sender_name}</span>
+                        </div>
+                        <div className={`rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
+                          msg.direction === "outbound"
+                            ? isMonara
+                              ? "bg-orange-500 text-white"
+                              : "bg-orange-50 text-gray-800 border border-orange-100"
+                            : "bg-white text-gray-800 border"
+                        }`}>
+                          {msg.body}
+                        </div>
+                        {msg.id?.startsWith("opt-") && (
+                          <div className="text-xs text-gray-400 mt-1 text-right">Sending...</div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={bottomRef} />
               </div>
 
               <div className="bg-white border-t p-3">
-                <div className="border rounded-xl overflow-hidden">
+                <div className="border rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-orange-500">
                   <textarea
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
-                    placeholder="Type a message..."
+                    placeholder="Type a reply..."
                     rows={3}
                     className="w-full px-4 pt-3 pb-1 text-sm resize-none focus:outline-none"
-                    onKeyDown={e => { if (e.key === "Enter" && e.ctrlKey) sendMessage(); }}
+                    onKeyDown={e => { if (e.key === "Enter" && e.ctrlKey) handleSend(); }}
                   />
                   <div className="flex items-center justify-between px-3 pb-2">
                     <div className="flex gap-2 text-gray-400 text-xs">
-                      <span>📎</span>
-                      <span>🎤</span>
+                      <span title="Attach">📎</span>
+                      <span title="Voice">🎤</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400">Ctrl ↵</span>
                       <button
-                        onClick={sendMessage}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                        onClick={handleSend}
+                        disabled={!newMessage.trim() || sending}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white disabled:opacity-50"
                         style={{ backgroundColor: "#ff5a1f" }}
                       >
-                        <Send className="w-4 h-4" />
+                        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
@@ -169,61 +337,73 @@ export default function Unibox() {
           )}
         </div>
 
-        {/* Right: Contact info — fully driven by selectedConv */}
-        {selectedConv && (
+        {/* Right: Contact Info */}
+        {selectedLead && (
           <div className="w-64 border-l bg-white overflow-y-auto flex-shrink-0">
             <div className="p-5">
               <h3 className="font-semibold text-gray-900 mb-1">Contact Information</h3>
-              <p className="text-xs text-gray-400 mb-4">{selectedConv.company}</p>
+              <p className="text-xs text-gray-400 mb-4">{selectedLead.company || "—"}</p>
 
               <div className="flex flex-col items-center mb-4">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold mb-3"
                   style={{ backgroundColor: "#ff5a1f" }}>
-                  {selectedConv.avatar}
+                  {selectedLead.name?.charAt(0) || "?"}
                 </div>
                 <div className="text-center">
                   <div className="font-semibold text-gray-900 flex items-center gap-1 justify-center">
-                    {selectedConv.name}
-                    <Linkedin className="w-3 h-3 text-blue-600" />
+                    {selectedLead.name}
+                    {selectedLead.linkedin_url && <Linkedin className="w-3 h-3 text-blue-600" />}
                   </div>
-                  <div className="text-xs text-gray-500">{selectedConv.title}</div>
+                  <div className="text-xs text-gray-500">{selectedLead.job_title || "—"}</div>
                 </div>
               </div>
 
               <div className="space-y-4 text-sm">
-                <div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">COMPANY</div>
-                  <div className="flex items-center gap-1 font-medium text-gray-800">
-                    {selectedConv.company}
-                    <Linkedin className="w-3 h-3 text-blue-600" />
+                {selectedLead.company && (
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">COMPANY</div>
+                    <div className="font-medium text-gray-800">{selectedLead.company}</div>
+                    {selectedLead.company_size && <div className="text-xs text-gray-500">{selectedLead.company_size}</div>}
                   </div>
-                  <div className="text-xs text-gray-500">{selectedConv.company_size}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">SIGNAL</div>
-                  <div className="text-xs text-blue-600 cursor-pointer">{selectedConv.signal}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">INDUSTRY</div>
-                  <div className="text-xs text-gray-700">{selectedConv.industry}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">LOCATION</div>
-                  <div className="text-xs text-gray-700">{selectedConv.location}</div>
-                </div>
-                {selectedConv.website && (
+                )}
+                {selectedLead.signal_source && (
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">SIGNAL</div>
+                    <div className="text-xs text-blue-600">{selectedLead.signal_source}</div>
+                  </div>
+                )}
+                {selectedLead.industry && (
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">INDUSTRY</div>
+                    <div className="text-xs text-gray-700">{selectedLead.industry}</div>
+                  </div>
+                )}
+                {selectedLead.location && (
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">LOCATION</div>
+                    <div className="text-xs text-gray-700">{selectedLead.location}</div>
+                  </div>
+                )}
+                {selectedLead.website && (
                   <div>
                     <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">WEBSITE</div>
-                    <a href={selectedConv.website} target="_blank" rel="noopener noreferrer"
+                    <a href={selectedLead.website} target="_blank" rel="noopener noreferrer"
                       className="text-xs text-orange-500 flex items-center gap-1">
-                      <Globe className="w-3 h-3" /> {selectedConv.website.replace("https://", "")}
+                      <Globe className="w-3 h-3" /> {selectedLead.website?.replace("https://", "")}
                     </a>
                   </div>
                 )}
-                <button className="text-xs text-orange-500 font-medium flex items-center gap-1">View more ›</button>
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 font-semibold">STATUS</div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    selectedLead.status === "contacted" ? "bg-green-100 text-green-700" :
+                    selectedLead.status === "approved" ? "bg-blue-100 text-blue-700" :
+                    "bg-gray-100 text-gray-600"
+                  }`}>
+                    {selectedLead.status || "pending"}
+                  </span>
+                </div>
               </div>
-
-              <button className="w-full mt-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Export</button>
             </div>
           </div>
         )}
