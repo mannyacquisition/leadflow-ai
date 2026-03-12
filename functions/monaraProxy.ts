@@ -9,7 +9,9 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { action, conversation_id, message, org_id, user_id } = await req.json();
+    const body = await req.json();
+    console.log("Request body:", JSON.stringify(body));
+    const { action, conversation_id, message, org_id, user_id } = body;
 
     if (action === "create_conversation") {
       const res = await fetch(`${BASE_URL}/conversations`, {
