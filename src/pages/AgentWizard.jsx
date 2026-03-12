@@ -1,45 +1,10 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { X, ChevronDown } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { toast } from "sonner";
 import IntentSignalsAccordion from "@/components/signalagents/IntentSignalsAccordion";
-import { Link } from "react-router-dom";
-
-const TAG_COLORS = {
-  job: "bg-orange-100 text-orange-700",
-  location: "bg-blue-100 text-blue-700",
-  industry: "bg-green-100 text-green-700",
-  size: "bg-purple-100 text-purple-700",
-  exclude: "bg-red-100 text-red-700",
-};
-
-const TagInput = ({ tags, onAdd, onRemove, placeholder, colorClass }) => {
-  const [input, setInput] = useState("");
-  return (
-    <div className="border rounded-lg p-2 flex flex-wrap gap-1.5 min-h-12 focus-within:ring-1 focus-within:ring-orange-500">
-      {tags.map((tag, i) => (
-        <span key={i} className={`flex items-center gap-1 px-2 py-0.5 rounded text-sm ${colorClass}`}>
-          {tag}
-          <button onClick={() => onRemove(i)}><X className="w-3 h-3" /></button>
-        </span>
-      ))}
-      <div className="flex items-center gap-1 flex-1 min-w-24">
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && input.trim()) { onAdd(input.trim()); setInput(""); } }}
-          placeholder={placeholder}
-          className="flex-1 text-sm outline-none bg-transparent"
-        />
-        <button
-          onClick={() => { if (input.trim()) { onAdd(input.trim()); setInput(""); } }}
-          className="px-2 py-0.5 text-xs font-medium"
-          style={{ color: "#ff5a1f" }}
-        >Add</button>
-      </div>
-    </div>
-  );
-};
+import IcpStep from "@/components/signalagents/IcpStep";
+import LeadsStep from "@/components/signalagents/LeadsStep";
 
 const steps = [
   { num: 1, label: "ICP", sub: "Ideal Customer Profile" },
@@ -53,6 +18,7 @@ const defaultForm = {
   target_locations: [],
   target_industries: [],
   company_sizes: [],
+  company_types: [],
   excluded_keywords: [],
   lead_matching_mode: 80,
   linkedin_page_url: "",
@@ -67,145 +33,140 @@ const defaultForm = {
   keywords: [],
   influencer_urls: [],
   competitor_urls: [],
+  lead_list_id: "",
+  lead_list_name: "",
 };
 
+// ── Step indicator in sidebar ─────────────────────────────────────────────────
+function StepItem({ step, activeStep, onClick }) {
+  const isActive = activeStep === step.num;
+  const isCompleted = activeStep > step.num;
+
+  let circleStyle = {};
+  let circleBg = "bg-gray-200";
+  let circleText = "text-gray-600";
+  let rowBg = "";
+  let labelColor = "text-gray-700";
+
+  if (isActive) {
+    circleStyle = { backgroundColor: "#ff5a1f" };
+    circleBg = "";
+    circleText = "text-white";
+    rowBg = "bg-orange-50 border border-orange-200";
+    labelColor = "text-orange-600";
+  } else if (isCompleted) {
+    circleBg = "bg-green-500";
+    circleText = "text-white";
+    rowBg = "bg-green-50 border border-green-200";
+    labelColor = "text-green-700";
+  }
+
+  return (
+    <button
+      onClick={() => onClick(step.num)}
+      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${rowBg || "hover:bg-white"}`}
+    >
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${circleBg} ${circleText}`}
+        style={isActive ? circleStyle : {}}
+      >
+        {isCompleted ? <Check className="w-4 h-4" /> : step.num}
+      </div>
+      <div>
+        <div className={`text-sm font-semibold ${labelColor}`}>{step.label}</div>
+        <div className="text-xs text-gray-400">{step.sub}</div>
+      </div>
+    </button>
+  );
+}
+
+// ── Main Wizard ───────────────────────────────────────────────────────────────
 export default function AgentWizard({ editingAgent, initialForm, onSaved, onCancel }) {
   const [activeStep, setActiveStep] = useState(1);
   const [form, setForm] = useState(initialForm || defaultForm);
+  const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    setSaving(true);
     try {
+      const payload = { ...form };
       if (editingAgent) {
-        await base44.entities.SignalAgent.update(editingAgent.id, form);
+        await base44.entities.SignalAgent.update(editingAgent.id, payload);
       } else {
-        await base44.entities.SignalAgent.create({ ...form, status: "active", leads_generated: 0 });
+        await base44.entities.SignalAgent.create({ ...payload, status: "active", leads_generated: 0 });
       }
       toast.success("Agent saved!");
       onSaved?.();
-    } catch (e) {
+    } catch {
       toast.error("Save failed");
     }
+    setSaving(false);
   };
 
-  const addTag = (field, value) => setForm(f => ({ ...f, [field]: [...(f[field] || []), value] }));
-  const removeTag = (field, idx) => setForm(f => ({ ...f, [field]: f[field].filter((_, i) => i !== idx) }));
+  const nextLabel = activeStep === 1 ? "Configure Signals ›" : activeStep === 2 ? "Configure Leads ›" : "Save ›";
+
+  const handleNext = () => {
+    if (activeStep < 3) setActiveStep(s => s + 1);
+    else handleSave();
+  };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="px-6 py-4 border-b bg-white flex items-center justify-between">
-        <div>
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Header */}
+      <div className="px-6 py-4 border-b bg-white flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-gray-900">
-            {editingAgent ? "Edit Agent" : "Launch New Agent"}{" "}
-            <span className="text-orange-500">{form.name}</span>
+            {editingAgent ? "Edit the AI Agent" : "Launch New Agent"}{" "}
+            <span className="text-orange-500 underline decoration-orange-400 underline-offset-2">{form.name}</span>
           </h1>
-          <p className="text-sm text-gray-500">Configure the agent's targeting criteria and intent signals</p>
+          <button className="flex items-center gap-1 px-3 py-1 border rounded-full text-xs font-medium text-orange-500 border-orange-200 hover:bg-orange-50">
+            ⓘ HOW IT WORKS?
+          </button>
         </div>
-        <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
-          <X className="w-4 h-4" /> Cancel
+        <button onClick={onCancel} className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1">
+          <X className="w-4 h-4" />
         </button>
       </div>
+      <p className="px-6 py-1.5 text-sm text-gray-500 bg-white border-b">
+        Update the agent configuration and targeting criteria
+      </p>
 
+      {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Steps sidebar */}
-        <div className="w-56 border-r bg-gray-50 p-4 space-y-2">
+        {/* Sidebar */}
+        <div className="w-64 flex-shrink-0 p-5 space-y-2 bg-white border-r">
           {steps.map(step => (
-            <button
-              key={step.num}
-              onClick={() => setActiveStep(step.num)}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${activeStep === step.num ? "bg-orange-50 border border-orange-200" : "hover:bg-white"}`}
-            >
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${activeStep === step.num ? "text-white" : "bg-gray-200 text-gray-600"}`}
-                style={activeStep === step.num ? { backgroundColor: "#ff5a1f" } : {}}
-              >
-                {step.num}
-              </div>
-              <div>
-                <div className={`text-sm font-medium ${activeStep === step.num ? "text-orange-600" : "text-gray-700"}`}>{step.label}</div>
-                <div className="text-xs text-gray-400">{step.sub}</div>
-              </div>
-            </button>
+            <StepItem key={step.num} step={step} activeStep={activeStep} onClick={setActiveStep} />
           ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-white">
-          {activeStep === 1 && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Define Your Ideal Customer Profile</h2>
-                  <p className="text-sm text-gray-500">Configure who your AI agent should target.</p>
-                </div>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium" style={{ backgroundColor: "#ff5a1f" }}>
-                  Generate ICP with AI ✨
-                </button>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Agent Name</label>
-                <input
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-400"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Target Job Titles</label>
-                  <TagInput tags={form.target_job_titles} onAdd={v => addTag("target_job_titles", v)} onRemove={i => removeTag("target_job_titles", i)} placeholder="e.g., Sales Manager" colorClass={TAG_COLORS.job} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Target Locations</label>
-                  <TagInput tags={form.target_locations} onAdd={v => addTag("target_locations", v)} onRemove={i => removeTag("target_locations", i)} placeholder="e.g., North America" colorClass={TAG_COLORS.location} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Target Industries</label>
-                  <TagInput tags={form.target_industries} onAdd={v => addTag("target_industries", v)} onRemove={i => removeTag("target_industries", i)} placeholder="e.g., SaaS" colorClass={TAG_COLORS.industry} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Sizes</label>
-                  <TagInput tags={form.company_sizes} onAdd={v => addTag("company_sizes", v)} onRemove={i => removeTag("company_sizes", i)} placeholder="e.g., 1-10 employees" colorClass={TAG_COLORS.size} />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Companies & Keywords to Exclude</label>
-                  <TagInput tags={form.excluded_keywords} onAdd={v => addTag("excluded_keywords", v)} onRemove={i => removeTag("excluded_keywords", i)} placeholder="e.g., Google" colorClass={TAG_COLORS.exclude} />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">Lead Matching Mode</label>
-                  <span className="text-sm text-gray-500">High Precision</span>
-                </div>
-                <input type="range" min="0" max="100" value={form.lead_matching_mode} onChange={e => setForm(f => ({ ...f, lead_matching_mode: Number(e.target.value) }))} className="w-full accent-orange-500" />
-              </div>
-            </div>
-          )}
-
-          {activeStep === 2 && <IntentSignalsAccordion form={form} setForm={setForm} />}
-
-          {activeStep === 3 && (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-lg font-medium">Leads Management</p>
-              <p className="text-sm mt-2">Configure how leads are managed after discovery</p>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-8 pt-4 border-t">
-            <button onClick={() => setActiveStep(Math.max(1, activeStep - 1))} disabled={activeStep === 1} className="px-4 py-2 text-sm border rounded-lg text-gray-600 disabled:opacity-40">← Back</button>
-            {activeStep < 3 ? (
-              <button onClick={() => setActiveStep(activeStep + 1)} className="px-6 py-2 text-sm rounded-lg text-white font-medium" style={{ backgroundColor: "#ff5a1f" }}>
-                Configure {activeStep === 1 ? "Signals" : "Leads"} →
-              </button>
-            ) : (
-              <button onClick={handleSave} className="px-6 py-2 text-sm rounded-lg text-white font-medium" style={{ backgroundColor: "#ff5a1f" }}>
-                Save Agent ✓
-              </button>
-            )}
+        <div className="flex-1 overflow-y-auto p-6 pb-24">
+          <div className="bg-white rounded-xl border p-6 min-h-full">
+            {activeStep === 1 && <IcpStep form={form} setForm={setForm} />}
+            {activeStep === 2 && <IntentSignalsAccordion form={form} setForm={setForm} />}
+            {activeStep === 3 && <LeadsStep form={form} setForm={setForm} />}
           </div>
         </div>
+      </div>
+
+      {/* Fixed Footer */}
+      <div className="flex-shrink-0 border-t bg-white px-6 py-4 flex items-center justify-between">
+        <button
+          onClick={() => setActiveStep(s => Math.max(1, s - 1))}
+          disabled={activeStep === 1}
+          className="px-5 py-2.5 rounded-lg border text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <button
+          onClick={handleNext}
+          disabled={saving}
+          className="px-6 py-2.5 rounded-lg text-white text-sm font-semibold disabled:opacity-60"
+          style={{ backgroundColor: "#ff5a1f" }}
+        >
+          {saving ? "Saving..." : nextLabel}
+        </button>
       </div>
     </div>
   );
