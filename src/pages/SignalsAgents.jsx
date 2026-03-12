@@ -23,7 +23,7 @@ function countSignals(agent) {
 }
 
 // ── 3-dot Actions Menu ───────────────────────────────────────────────────────
-function ActionsMenu({ agent, onEdit, onRefresh }) {
+function ActionsMenu({ agent, onEdit }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
