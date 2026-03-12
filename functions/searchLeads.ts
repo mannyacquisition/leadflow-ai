@@ -21,15 +21,14 @@ Deno.serve(async (req) => {
     }
 
     // Resolve org_id from session if not passed
-    const effectiveOrgId = org_id || user.org_id || user.email || null;
+    const effectiveOrgId = org_id || user.org_id || user.email;
 
-    // Fetch all leads for this org (Lead entity uses 'name' as a single full-name field)
-    const allLeads = await base44.asServiceRole.entities.Lead.list('-created_date', 1000);
+    if (!effectiveOrgId) {
+      return Response.json({ error: 'org_id could not be resolved from session' }, { status: 400 });
+    }
 
-    // Filter to this org
-    const orgLeads = effectiveOrgId
-      ? allLeads.filter(l => l.org_id === effectiveOrgId)
-      : allLeads;
+    // Fetch leads directly filtered by org_id at the database level — not in-memory
+    const orgLeads = await base44.asServiceRole.entities.Lead.filter({ org_id: effectiveOrgId }, '-created_date', 5000);
 
     // Fuzzy search across name, email, company — case-insensitive
     const q = search_query.toLowerCase().trim();
