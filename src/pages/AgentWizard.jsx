@@ -175,6 +175,7 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
             <InlineAgentName
               name={form.name}
               agentId={editingAgent?.id}
+              orgId={orgId}
               onChange={newName => setForm(f => ({ ...f, name: newName }))}
             />
           </h1>
