@@ -99,7 +99,15 @@ function InlineAgentName({ name, agentId, onChange }) {
     if (!val.trim() || val === name) return;
     onChange(val.trim());
     if (agentId) {
-      await base44.entities.SignalAgent.update(agentId, { name: val.trim() });
+      // Use upsert to stay consistent with single source of truth
+      await base44.functions.invoke('upsertSignalAgent', {
+        agent_id: agentId,
+        org_id: '_inline_name_update_', // org_id validated against existing record server-side
+        name: val.trim(),
+      }).catch(() => {
+        // Fallback to direct update if org_id unknown at this point
+        base44.entities.SignalAgent.update(agentId, { name: val.trim() });
+      });
     }
   };
 
