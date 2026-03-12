@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { X, Send, Bot, Minimize2 } from "lucide-react";
+import { X, Send, Bot } from "lucide-react";
 import MonaraMessageBubble from "./MonaraMessageBubble";
 
 const INITIAL_MSG = {
@@ -14,42 +14,47 @@ export default function MonaraPanel({ isOpen, onClose }) {
   const [messages, setMessages] = useState([INITIAL_MSG]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
   const bottomRef = useRef(null);
 
   useEffect(() => {
+    if (isOpen && !conversationId) {
+      base44.auth.me().then(user => {
+        return base44.functions.invoke("monaraProxy", {
+          action: "create_conversation",
+          org_id: "default",
+          user_id: user?.id || user?.email,
+        });
+      }).then(res => {
+        if (res.data?.id) setConversationId(res.data.id);
+      }).catch(() => {});
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loading]);
 
   const sendMessage = async () => {
     const msg = input.trim();
-    if (!msg) return;
+    if (!msg || loading) return;
     setInput("");
 
     setMessages(prev => [...prev, { id: Date.now().toString(), role: "user", content: msg, rich_type: "text" }]);
     setLoading(true);
 
     try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Monara, an AI assistant for a B2B lead generation platform.
-User message: "${msg}"
-Respond helpfully and concisely. Use markdown. Keep it brief for a side panel.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            content: { type: "string" },
-            rich_type: { type: "string" },
-            action_taken: { type: "string" }
-          },
-          required: ["content"]
-        }
+      const res = await base44.functions.invoke("monaraProxy", {
+        action: "send_message",
+        conversation_id: conversationId,
+        message: msg,
       });
-
+      const assistant = res.data?.latest_assistant_message;
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: response.content || "Done!",
-        rich_type: response.rich_type || "text",
-        action_taken: response.action_taken,
+        content: assistant?.content || "Done!",
+        rich_type: "text",
       }]);
     } catch (e) {
       setMessages(prev => [...prev, {
@@ -77,11 +82,9 @@ Respond helpfully and concisely. Use markdown. Keep it brief for a side panel.`,
             <div className="text-gray-400 text-xs">Always on · Omnichannel</div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={onClose} className="text-gray-400 hover:text-white p-1">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <button onClick={onClose} className="text-gray-400 hover:text-white p-1">
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Messages */}

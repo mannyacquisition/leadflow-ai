@@ -25,12 +25,15 @@ export default function CommandCenter() {
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    // Create a new conversation
-    base44.entities.MonaraConversation.create({
-      title: "Command Center Session",
-      source_channel: "web",
-      org_id: "default",
-    }).then(conv => setConversationId(conv.id)).catch(() => {});
+    base44.auth.me().then(user => {
+      return base44.functions.invoke("monaraProxy", {
+        action: "create_conversation",
+        org_id: "default",
+        user_id: user?.id || user?.email,
+      });
+    }).then(res => {
+      if (res.data?.id) setConversationId(res.data.id);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
