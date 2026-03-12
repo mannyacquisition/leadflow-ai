@@ -183,16 +183,21 @@ export default function Contacts() {
                       {lead.name?.charAt(0)}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900 flex items-center gap-1">
-                        {lead.name}
+                      <div className="font-medium flex items-center gap-1">
+                        <button
+                          onClick={() => setSelectedLead(lead)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                        >
+                          {lead.name}
+                        </button>
                         {lead.linkedin_url && (
-                          <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer">
+                          <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
                             <Linkedin className="w-3 h-3 text-blue-600" />
                           </a>
                         )}
                       </div>
                       <div className="text-xs text-gray-500">{lead.job_title}</div>
-                      <div className="text-xs text-gray-400">@{lead.company}</div>
+                      <div className="text-xs text-gray-400">@ {lead.company}</div>
                     </div>
                   </div>
                 </td>
