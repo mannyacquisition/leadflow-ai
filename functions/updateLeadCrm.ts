@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       lead = leads[0];
     } catch (_) { lead = null; }
     if (!lead) return Response.json({ error: 'Lead not found' }, { status: 404 });
-    if (lead.org_id !== org_id) {
+    if (lead.org_id !== effectiveOrgId) {
       return Response.json({ error: 'Forbidden: lead does not belong to this organization' }, { status: 403 });
     }
 
