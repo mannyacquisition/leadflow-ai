@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Bot, Megaphone, Users, Zap,
   Inbox, BarChart3, Puzzle, Settings, Bell, Gift,
-  ChevronDown, LogOut, User, Terminal
+  ChevronDown, LogOut, User, Terminal, Database
 } from "lucide-react";
 import MonaraPanel from "@/components/monara/MonaraPanel";
 
