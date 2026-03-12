@@ -244,6 +244,22 @@ export default function Contacts() {
         </table>
       </div>
 
+      {/* Lead Slide-over */}
+      {selectedLead && (
+        <LeadSlideOver
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          onUpdate={(updated) => {
+            setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
+            setSelectedLead(updated);
+          }}
+          onDelete={(id) => {
+            setLeads(prev => prev.filter(l => l.id !== id));
+            setTotal(t => t - 1);
+          }}
+        />
+      )}
+
       {/* Pagination */}
       <div className="px-6 py-3 border-t bg-white flex items-center justify-between">
         <span className="text-sm text-gray-500">
