@@ -71,6 +71,7 @@ export default function Dashboard() {
             <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
             2 LinkedIn Account(s)
           </span>
+          <SystemHealthBadge />
         </div>
       </div>
 
