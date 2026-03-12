@@ -149,6 +149,11 @@ export default function Dashboard() {
         </ResponsiveContainer>
       </div>
 
+      {/* Insights Panel */}
+      <div className="mb-6">
+        <InsightsPanel />
+      </div>
+
       {/* Bottom panels */}
       <div className="grid grid-cols-2 gap-4">
         {/* Hot Leads */}
