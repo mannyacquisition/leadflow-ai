@@ -7,7 +7,7 @@ import {
   Inbox, BarChart3, Puzzle, Settings, Bell, Gift,
   ChevronDown, LogOut, User, Terminal
 } from "lucide-react";
-import MonaraPanel from "./components/monara/MonaraPanel";
+import MonaraPanel from "@/components/monara/MonaraPanel";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
