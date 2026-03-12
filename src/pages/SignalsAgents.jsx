@@ -50,7 +50,6 @@ function ActionsMenu({ agent, onEdit, onRefresh }) {
   const handleDelete = async () => {
     await base44.entities.SignalAgent.delete(agent.id);
     toast.success("Agent deleted");
-    onRefresh();
     setOpen(false);
   };
 
