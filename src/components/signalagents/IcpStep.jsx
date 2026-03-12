@@ -90,6 +90,8 @@ const COMPANY_TYPES = ["All company types","Private Company","Public Company","S
 
 // ── Main ICP Step ─────────────────────────────────────────────────────────────
 export default function IcpStep({ form, setForm }) {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
   const addToArr = (field, value) => {
     if (!value || (form[field] || []).includes(value)) return;
     setForm(f => ({ ...f, [field]: [...(f[field] || []), value] }));
