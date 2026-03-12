@@ -36,8 +36,11 @@ const FireScore = ({ score }) => (
 export default function Copilot() {
   const [leads, setLeads] = useState(mockLeads);
   const [selectedLead, setSelectedLead] = useState(mockLeads[0]);
-  const [messageText, setMessageText] = useState(defaultMessage);
+  const [messagesByLead, setMessagesByLead] = useState({});
   const [approving, setApproving] = useState(false);
+
+  const messageText = messagesByLead[selectedLead?.id] ?? `${selectedLead?.name?.split(" ")[0] || "Hi"}, congrats on ${selectedLead?.company || "your venture"}!\n\nQuick q - how many times have you re-explained your product and ICP to GPT / Claude this week?\n\nRecently built Monara, AI consultant that generates your strategy and builds your assets in one click.\n\nDifferent how? It's built on private benchmark data that YC uses, and $100M SaaS playbooks`;
+  const setMessageText = (val) => setMessagesByLead(prev => ({ ...prev, [selectedLead.id]: val }));
 
   const handleApprove = async () => {
     setApproving(true);
