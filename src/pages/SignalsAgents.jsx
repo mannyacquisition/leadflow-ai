@@ -106,7 +106,20 @@ export default function SignalsAgents() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchAgents(); }, []);
+  useEffect(() => {
+    fetchAgents();
+    // Real-time subscription — auto-refresh whenever backend writes (Wizard or Monara)
+    const unsubscribe = base44.entities.SignalAgent.subscribe((event) => {
+      if (event.type === 'create') {
+        setAgents(prev => [event.data, ...prev]);
+      } else if (event.type === 'update') {
+        setAgents(prev => prev.map(a => a.id === event.id ? event.data : a));
+      } else if (event.type === 'delete') {
+        setAgents(prev => prev.filter(a => a.id !== event.id));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const activeAgent = agents.find(a => a.status === "active");
 
