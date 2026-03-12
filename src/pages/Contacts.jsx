@@ -108,8 +108,9 @@ export default function Contacts() {
   };
 
   const handleFitUpdate = async (leadId, fit) => {
+    // Optimistic local update — no re-fetch needed (subscription handles remote sync)
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, fit_status: fit } : l));
     await base44.entities.Lead.update(leadId, { fit_status: fit });
-    fetchLeads(page, search);
   };
 
   const totalPages = Math.ceil(total / LEADS_PER_PAGE);
