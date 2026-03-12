@@ -14,8 +14,11 @@ Deno.serve(async (req) => {
     }
 
     // Security: verify the lead belongs to this org
-    const leads = await base44.asServiceRole.entities.Lead.filter({ id: leadId });
-    const lead = leads[0];
+    let lead;
+    try {
+      const leads = await base44.asServiceRole.entities.Lead.filter({ id: leadId });
+      lead = leads[0];
+    } catch (_) { lead = null; }
     if (!lead) {
       return Response.json({ error: 'Lead not found' }, { status: 404 });
     }
