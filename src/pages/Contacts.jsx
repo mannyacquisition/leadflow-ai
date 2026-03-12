@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search, Plus, Download, Mail, Check, X, HelpCircle, ChevronLeft, ChevronRight, Linkedin } from "lucide-react";
 import { toast } from "sonner";
@@ -78,8 +78,8 @@ export default function Contacts() {
 
   // Real-time: sync Lead changes made by Monara or other sessions
   // Note: use ref for page/search to avoid stale closure
-  const pageRef = React.useRef(page);
-  const searchRef = React.useRef(search);
+  const pageRef = useRef(page);
+  const searchRef = useRef(search);
   useEffect(() => { pageRef.current = page; }, [page]);
   useEffect(() => { searchRef.current = search; }, [search]);
 
