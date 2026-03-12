@@ -162,22 +162,26 @@ export default function Dashboard() {
               View More <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="space-y-3">
-            {hotLeads.map((lead, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-xs font-semibold">
-                    {lead.name.charAt(0)}
+          {hotLeadsList.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">No hot leads yet</p>
+          ) : (
+            <div className="space-y-3">
+              {hotLeadsList.map((lead, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-xs font-semibold">
+                      {lead.name?.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{lead.name}</div>
+                      <div className="text-xs text-gray-500">{lead.job_title} · {lead.company}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{lead.name}</div>
-                    <div className="text-xs text-gray-500">{lead.title} · {lead.company}</div>
-                  </div>
+                  <FireScore score={lead.ai_score || 3} />
                 </div>
-                <FireScore score={lead.score} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Latest Replies */}
