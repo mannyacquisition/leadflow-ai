@@ -20,10 +20,11 @@ export default function MonaraPanel({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen && !conversationId) {
       base44.auth.me().then(user => {
+        // Pass user identifiers; proxy will auto-resolve org_id server-side
         return base44.functions.invoke("monaraProxy", {
           action: "create_conversation",
-          org_id: "default",
           user_id: user?.id || user?.email,
+          // org_id resolved server-side from authenticated session
         });
       }).then(res => {
         if (res.data?.id) setConversationId(res.data.id);
