@@ -17,6 +17,7 @@ const navItems = [
   { label: "Signals Agents", icon: Zap, page: "SignalsAgents" },
   { label: "Unibox", icon: Inbox, page: "Unibox" },
   { label: "Insights", icon: BarChart3, page: "Insights" },
+  { label: "Lead Database", icon: Database, page: "LeadDatabase" },
   { label: "Integrations", icon: Puzzle, page: "Integrations" },
   { label: "Command Center", icon: Terminal, page: "CommandCenter" },
   { label: "Settings", icon: Settings, page: "Settings" },
