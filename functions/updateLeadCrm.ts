@@ -37,8 +37,11 @@ Deno.serve(async (req) => {
     if (!org_id) return Response.json({ error: 'org_id is required' }, { status: 400 });
 
     // Security: verify lead belongs to this org
-    const leads = await base44.asServiceRole.entities.Lead.filter({ id: lead_id });
-    const lead = leads[0];
+    let lead;
+    try {
+      const leads = await base44.asServiceRole.entities.Lead.filter({ id: lead_id });
+      lead = leads[0];
+    } catch (_) { lead = null; }
     if (!lead) return Response.json({ error: 'Lead not found' }, { status: 404 });
     if (lead.org_id !== org_id) {
       return Response.json({ error: 'Forbidden: lead does not belong to this organization' }, { status: 403 });
