@@ -87,7 +87,7 @@ function StepItem({ step, activeStep, onClick }) {
 }
 
 // ── Inline editable name ──────────────────────────────────────────────────────
-function InlineAgentName({ name, agentId, onChange }) {
+function InlineAgentName({ name, agentId, orgId, onChange }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(name);
   const inputRef = useRef(null);
@@ -98,8 +98,9 @@ function InlineAgentName({ name, agentId, onChange }) {
     setEditing(false);
     if (!val.trim() || val === name) return;
     onChange(val.trim());
-    if (agentId) {
-      await base44.entities.SignalAgent.update(agentId, { name: val.trim() });
+    // Persist inline rename immediately if we have an existing agent
+    if (agentId && orgId) {
+      base44.functions.invoke('upsertSignalAgent', { agent_id: agentId, org_id: orgId, name: val.trim() });
     }
   };
 
@@ -129,62 +130,30 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
   const [form, setForm] = useState(initialForm || defaultForm);
   const [saving, setSaving] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
-  const [orgId, setOrgId] = useState(editingAgent?.org_id || null);
+  const [orgId, setOrgId] = useState(null);
 
-  // ── Load org_id from current user's org settings ──────────────────────────
   useEffect(() => {
-    if (!orgId) {
-      base44.auth.me().then(user => {
-        if (user?.email) {
-          base44.entities.OrganizationSettings.filter({ org_id: user.email })
-            .then(results => {
-              const id = results[0]?.org_id || user.email;
-              setOrgId(id);
-              setForm(f => ({ ...f, org_id: id }));
-            })
-            .catch(() => {
-              setOrgId(user.email);
-              setForm(f => ({ ...f, org_id: user.email }));
-            });
-        }
-      });
-    }
+    base44.auth.me().then(user => setOrgId(user?.org_id || user?.id || user?.email)).catch(() => {});
   }, []);
 
-  // ── Real-time sync: re-fetch if backend changes this agent ────────────────
-  useEffect(() => {
-    if (!editingAgent?.id) return;
-    const unsub = base44.entities.SignalAgent.subscribe((event) => {
-      if (event.id === editingAgent.id && event.type === 'update' && event.data) {
-        // Merge remote changes into local form (non-destructively)
-        setForm(prev => ({ ...prev, ...event.data }));
-      }
-    });
-    return unsub;
-  }, [editingAgent?.id]);
-
   const handleSave = async () => {
+    if (!orgId) { toast.error("Organization ID not found. Please refresh."); return; }
     setSaving(true);
-    const resolvedOrgId = orgId || form.org_id || editingAgent?.org_id;
-    if (!resolvedOrgId) {
-      toast.error("Organization ID missing. Please refresh and try again.");
-      setSaving(false);
-      return;
-    }
     try {
-      const response = await base44.functions.invoke('upsertSignalAgent', {
-        ...(editingAgent?.id ? { agent_id: editingAgent.id } : {}),
-        org_id: resolvedOrgId,
+      const payload = {
+        org_id: orgId,
         ...form,
-      });
-      if (response.data?.success) {
+        ...(editingAgent && { agent_id: editingAgent.id }),
+      };
+      const res = await base44.functions.invoke('upsertSignalAgent', payload);
+      if (res.data?.success) {
         toast.success("Agent saved!");
         onSaved?.();
       } else {
-        toast.error(response.data?.error || "Save failed");
+        throw new Error(res.data?.error || "Save failed");
       }
     } catch (err) {
-      toast.error("Save failed");
+      toast.error(err.message || "Save failed");
     }
     setSaving(false);
   };
