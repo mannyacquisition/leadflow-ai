@@ -44,7 +44,12 @@ export default function LeadSlideOver({ lead, onClose, onUpdate, onDelete }) {
 
   const handleSaveNotes = async () => {
     setSavingNotes(true);
-    await base44.entities.Lead.update(lead.id, { internal_notes: notes });
+    await base44.functions.invoke('updateLeadCrm', {
+      lead_id: lead.id,
+      org_id: lead.org_id,
+      internal_notes: notes,
+      append_activity: { type: 'note', description: 'Internal notes updated' },
+    });
     toast.success("Notes saved");
     onUpdate({ ...lead, internal_notes: notes });
     setSavingNotes(false);
@@ -52,7 +57,11 @@ export default function LeadSlideOver({ lead, onClose, onUpdate, onDelete }) {
 
   const handleFitUpdate = async (fit) => {
     setUpdatingFit(true);
-    await base44.entities.Lead.update(lead.id, { fit_status: fit });
+    await base44.functions.invoke('updateLeadCrm', {
+      lead_id: lead.id,
+      org_id: lead.org_id,
+      fit_status: fit,
+    });
     onUpdate({ ...lead, fit_status: fit });
     setUpdatingFit(false);
   };
