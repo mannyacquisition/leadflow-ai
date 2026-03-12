@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "api_key": API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
-          agent_name: "default",
+          agent_name: "monara",
           metadata: { org_id: org_id || "default", user_id: user_id || user.id }
         })
       });
