@@ -76,6 +76,25 @@ export default function Contacts() {
     fetchLeads(page, search);
   }, [page, search]);
 
+  // Real-time: sync Lead changes made by Monara or other sessions
+  useEffect(() => {
+    const unsubscribe = base44.entities.Lead.subscribe((event) => {
+      if (event.type === 'update') {
+        setLeads(prev => prev.map(l => l.id === event.id ? { ...l, ...event.data } : l));
+        // Keep slide-over in sync
+        setSelectedLead(prev => prev?.id === event.id ? { ...prev, ...event.data } : prev);
+      } else if (event.type === 'delete') {
+        setLeads(prev => prev.filter(l => l.id !== event.id));
+        setSelectedLead(prev => prev?.id === event.id ? null : prev);
+        setTotal(t => t - 1);
+      } else if (event.type === 'create') {
+        // Refresh to get the new lead in the right sort position
+        fetchLeads(page, search);
+      }
+    });
+    return () => unsubscribe();
+  }, [page, search]);
+
   const handleEnrich = async (lead) => {
     setEnrichingId(lead.id);
     try {
