@@ -163,7 +163,7 @@ export default function Settings() {
             <div className="max-w-2xl">
               <div className="bg-white rounded-xl border p-6 space-y-6">
                 <h2 className="text-lg font-semibold text-gray-900">API Keys</h2>
-                <p className="text-sm text-gray-500">Connect your Trigify and Unipile accounts for signal discovery and outreach.</p>
+                <p className="text-sm text-gray-500">Connect your Trigify, Unipile, and Netrows accounts for signal discovery, outreach, and lead database access.</p>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Trigify API Key</label>
@@ -185,6 +185,21 @@ export default function Settings() {
                     type="password"
                     className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Netrows API Key
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full font-medium">Lead Database</span>
+                  </label>
+                  <input
+                    value={settings.api_key_netrows || ""}
+                    onChange={e => setSettings(s => ({ ...s, api_key_netrows: e.target.value }))}
+                    placeholder="Your Netrows.com API key..."
+                    type="password"
+                    className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Get your key at <a href="https://netrows.com" target="_blank" rel="noopener noreferrer" className="text-orange-500 underline">netrows.com</a>. Enables searching 250M+ B2B contacts.</p>
                 </div>
 
                 <button
