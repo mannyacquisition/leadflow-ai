@@ -77,23 +77,27 @@ export default function Contacts() {
   }, [page, search]);
 
   // Real-time: sync Lead changes made by Monara or other sessions
+  // Note: use ref for page/search to avoid stale closure
+  const pageRef = React.useRef(page);
+  const searchRef = React.useRef(search);
+  useEffect(() => { pageRef.current = page; }, [page]);
+  useEffect(() => { searchRef.current = search; }, [search]);
+
   useEffect(() => {
     const unsubscribe = base44.entities.Lead.subscribe((event) => {
       if (event.type === 'update') {
         setLeads(prev => prev.map(l => l.id === event.id ? { ...l, ...event.data } : l));
-        // Keep slide-over in sync
         setSelectedLead(prev => prev?.id === event.id ? { ...prev, ...event.data } : prev);
       } else if (event.type === 'delete') {
         setLeads(prev => prev.filter(l => l.id !== event.id));
         setSelectedLead(prev => prev?.id === event.id ? null : prev);
         setTotal(t => t - 1);
       } else if (event.type === 'create') {
-        // Refresh to get the new lead in the right sort position
-        fetchLeads(page, search);
+        fetchLeads(pageRef.current, searchRef.current);
       }
     });
     return () => unsubscribe();
-  }, [page, search]);
+  }, []);
 
   const handleEnrich = async (lead) => {
     setEnrichingId(lead.id);
