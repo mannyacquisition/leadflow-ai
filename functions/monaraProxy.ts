@@ -32,9 +32,10 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ role: "user", content: message })
       });
       const data = await res.json();
+      console.log("send_message HTTP status:", res.status, "response:", JSON.stringify(data));
       // Extract the latest assistant message
-      const messages = data.messages || [];
-      const assistantMsg = [...messages].reverse().find(m => m.role === "assistant");
+      const msgs = data.messages || [];
+      const assistantMsg = [...msgs].reverse().find(m => m.role === "assistant");
       return Response.json({ ...data, latest_assistant_message: assistantMsg || null });
     }
 
