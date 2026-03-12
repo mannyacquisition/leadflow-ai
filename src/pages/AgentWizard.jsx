@@ -161,9 +161,16 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-gray-900">
             {editingAgent ? "Edit the AI Agent" : "Launch New Agent"}{" "}
-            <span className="text-orange-500 underline decoration-orange-400 underline-offset-2">{form.name}</span>
+            <InlineAgentName
+              name={form.name}
+              agentId={editingAgent?.id}
+              onChange={newName => setForm(f => ({ ...f, name: newName }))}
+            />
           </h1>
-          <button className="flex items-center gap-1 px-3 py-1 border rounded-full text-xs font-medium text-orange-500 border-orange-200 hover:bg-orange-50">
+          <button
+            onClick={() => setShowHowItWorks(true)}
+            className="flex items-center gap-1 px-3 py-1 border rounded-full text-xs font-medium text-orange-500 border-orange-200 hover:bg-orange-50"
+          >
             ⓘ HOW IT WORKS?
           </button>
         </div>
