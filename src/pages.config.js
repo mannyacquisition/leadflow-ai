@@ -52,6 +52,11 @@ import Contacts from './pages/Contacts';
 import Copilot from './pages/Copilot';
 import Campaigns from './pages/Campaigns';
 import SignalsAgents from './pages/SignalsAgents';
+import Unibox from './pages/Unibox';
+import Insights from './pages/Insights';
+import Settings from './pages/Settings';
+import Integrations from './pages/Integrations';
+import CommandCenter from './pages/CommandCenter';
 import __Layout from './Layout.jsx';
 
 
@@ -61,6 +66,11 @@ export const PAGES = {
     "Copilot": Copilot,
     "Campaigns": Campaigns,
     "SignalsAgents": SignalsAgents,
+    "Unibox": Unibox,
+    "Insights": Insights,
+    "Settings": Settings,
+    "Integrations": Integrations,
+    "CommandCenter": CommandCenter,
 }
 
 export const pagesConfig = {
