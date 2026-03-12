@@ -71,6 +71,12 @@ export default function SignalsAgents() {
     track_job_changes: true,
     track_funding_events: false,
     track_top_profiles: true,
+    profile_visitors_account: "first",
+    company_followers_url: "",
+    company_followers_account: "second",
+    keywords: [],
+    influencer_urls: [],
+    competitor_urls: [],
   });
 
   useEffect(() => {
