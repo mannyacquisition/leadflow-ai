@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Zap, MessageSquare, Users, TrendingUp, ChevronRight, Flame } from "lucide-react";
+import { Zap, MessageSquare, Users, ChevronRight, Flame } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const activityData = [
@@ -15,17 +15,6 @@ const activityData = [
   { date: "Feb 17", leads: 70, invitations: 65, messages: 45 },
 ];
 
-const hotLeads = [
-  { name: "Emre TACYILDIZ", title: "Founder", company: "REFKOD", score: 3 },
-  { name: "Aleksand Manokhin", title: "Founder", company: "Never Sleep Upwork Auto-Responder", score: 3 },
-  { name: "Hans Guntren", title: "Co-Founder, CEO", company: "Deliberately Incorporated", score: 3 },
-];
-
-const latestReplies = [
-  { name: "Michael Bremmer", message: "No, I don't do cold emails. But thanks", time: "2 days ago" },
-  { name: "Nigel Thomas", message: "Great to connect Manny! What prior...", time: "2 days ago" },
-];
-
 const FireScore = ({ score }) => (
   <span className="flex gap-0.5">
     {[1, 2, 3].map(i => (
@@ -36,9 +25,29 @@ const FireScore = ({ score }) => (
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({ totalLeads: 0, hotLeads: 0, contacted: 0, replies: 0 });
+  const [hotLeadsList, setHotLeadsList] = useState([]);
+  const [latestReplies, setLatestReplies] = useState([]);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
+
+    // Load real data in parallel
+    Promise.all([
+      base44.entities.Lead.list("-created_date", 1000),
+      base44.entities.Message.filter({ direction: "inbound" }, "-created_date", 5),
+    ]).then(([leads, replies]) => {
+      const hot = leads.filter(l => l.is_hot || l.ai_score === 3);
+      const contacted = leads.filter(l => l.status === "contacted" || l.status === "approved");
+      setStats({
+        totalLeads: leads.length,
+        hotLeads: hot.length,
+        contacted: contacted.length,
+        replies: replies.length,
+      });
+      setHotLeadsList(hot.slice(0, 3));
+      setLatestReplies(replies.slice(0, 3));
+    }).catch(() => {});
   }, []);
 
   return (
