@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search, Plus, Download, Mail, Check, X, HelpCircle, ChevronLeft, ChevronRight, Linkedin } from "lucide-react";
 import { toast } from "sonner";
+import LeadSlideOver from "@/components/contacts/LeadSlideOver";
 
 const LEADS_PER_PAGE = 15;
 
