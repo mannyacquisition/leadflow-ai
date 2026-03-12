@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Plus, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import IntentSignalsAccordion from "@/components/signalagents/IntentSignalsAccordion";
 
 const TAG_COLORS = {
   job: "bg-orange-100 text-orange-700",
