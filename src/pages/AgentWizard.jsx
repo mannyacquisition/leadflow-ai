@@ -201,6 +201,8 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
         </div>
       </div>
 
+      {showHowItWorks && <HowItWorksModal onClose={() => setShowHowItWorks(false)} />}
+
       {/* Fixed Footer */}
       <div className="flex-shrink-0 border-t bg-white px-6 py-4 flex items-center justify-between">
         <button
