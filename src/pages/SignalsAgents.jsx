@@ -35,17 +35,15 @@ function ActionsMenu({ agent, onEdit, onRefresh }) {
 
   const handlePause = async () => {
     const newStatus = agent.status === "active" ? "paused" : "active";
-    await base44.entities.SignalAgent.update(agent.id, { status: newStatus });
+    await base44.functions.invoke('upsertSignalAgent', { agent_id: agent.id, org_id: agent.org_id, status: newStatus });
     toast.success(`Agent ${newStatus === "active" ? "resumed" : "paused"}`);
-    onRefresh();
     setOpen(false);
   };
 
   const handleDuplicate = async () => {
     const { id, created_date, updated_date, created_by, ...rest } = agent;
-    await base44.entities.SignalAgent.create({ ...rest, name: `${agent.name} (Copy)` });
+    await base44.functions.invoke('upsertSignalAgent', { ...rest, name: `${agent.name} (Copy)` });
     toast.success("Agent duplicated");
-    onRefresh();
     setOpen(false);
   };
 
