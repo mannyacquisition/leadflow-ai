@@ -51,6 +51,7 @@ export default function Contacts() {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [enrichingId, setEnrichingId] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(null);
 
   const fetchLeads = async (pageNum, searchTerm) => {
     setLoading(true);
