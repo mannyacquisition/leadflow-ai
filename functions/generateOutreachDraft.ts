@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { lead_id, org_id, campaign_id } = await req.json();
+    const { lead_id, org_id, campaign_id, signal_agent_id, signal_agent_name } = await req.json();
     if (!lead_id || !org_id) {
       return Response.json({ error: "lead_id and org_id are required" }, { status: 400 });
     }
