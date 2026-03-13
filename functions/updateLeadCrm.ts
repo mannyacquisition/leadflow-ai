@@ -62,6 +62,14 @@ Deno.serve(async (req) => {
       if (fields[key] !== undefined) updatePayload[key] = fields[key];
     }
 
+    // Handle internal_notes: append to existing notes with double newline separator
+    if (updatePayload.internal_notes !== undefined) {
+      const existingNotes = lead.internal_notes || '';
+      updatePayload.internal_notes = existingNotes
+        ? `${existingNotes}\n\n${updatePayload.internal_notes}`
+        : updatePayload.internal_notes;
+    }
+
     // Handle append_activity convenience helper
     if (append_activity && append_activity.description) {
       const existingLog = Array.isArray(lead.activity_log) ? lead.activity_log : [];
