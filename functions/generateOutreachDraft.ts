@@ -70,6 +70,16 @@ Deno.serve(async (req) => {
       ? `Lead LinkedIn context: ${lead.profile_baseline}`
       : "";
 
+    const agentContext = signalAgent
+      ? `This lead was categorized and scored by the "${signalAgent.name}" Signal Agent. ` +
+        (signalAgent.additional_criteria ? `Agent scoring criteria: ${signalAgent.additional_criteria}. ` : "") +
+        (signalAgent.target_job_titles?.length ? `Target job titles: ${signalAgent.target_job_titles.join(", ")}. ` : "") +
+        (signalAgent.target_industries?.length ? `Target industries: ${signalAgent.target_industries.join(", ")}. ` : "") +
+        `Tailor the message specifically to this agent's vertical and ICP. The lead's fit status is: ${lead.fit_status || "maybe"}.`
+      : signal_agent_name
+      ? `This lead was routed from the "${signal_agent_name}" Signal Agent. Tailor tone and context to that vertical.`
+      : "";
+
     const prompt = `You are an expert B2B outreach copywriter writing a highly personalized, concise LinkedIn first message.
 
 Lead Information:
