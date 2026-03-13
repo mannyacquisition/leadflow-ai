@@ -42,6 +42,15 @@ Deno.serve(async (req) => {
       } catch (_) {}
     }
 
+    // Fetch Signal Agent context if provided (runs BEFORE prompt build)
+    let signalAgent = null;
+    if (signal_agent_id) {
+      try {
+        const agents = await base44.asServiceRole.entities.SignalAgent.filter({ id: signal_agent_id });
+        signalAgent = agents[0] || null;
+      } catch (_) {}
+    }
+
     // Build the AI prompt
     const signalDescription = lead.intent_signal_data
       ? `They recently ${lead.intent_signal_data.signal_type || "engaged"} with "${lead.intent_signal_data.keyword || "relevant content"}".`
