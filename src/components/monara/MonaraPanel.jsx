@@ -55,13 +55,18 @@ export default function MonaraPanel({ isOpen, onClose }) {
         message: msg,
       });
       const assistant = res.data?.latest_assistant_message;
+      const content = assistant?.content || "Done!";
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: assistant?.content || "Done!",
+        content,
         rich_type: "text",
       }]);
+      // Broadcast to any listening pages so they re-fetch fresh data
+      monaraChannel.postMessage({ type: "REFRESH_LEAD_DATA" });
     } catch (e) {
+      const errMsg = e?.message || "Unknown error";
+      toast.error(`Monara error: ${errMsg}`);
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: "assistant",
