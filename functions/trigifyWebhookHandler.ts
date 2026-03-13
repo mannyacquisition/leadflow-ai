@@ -239,16 +239,28 @@ Deno.serve(async (req) => {
       }
       try {
         await base44.asServiceRole.functions.invoke("generateOutreachDraft", {
-          lead_id:          lead.id,
-          org_id:           ORG_ID,
-          signal_agent_id:  lead.agentId,
+          lead_id:           lead.id,
+          org_id:            ORG_ID,
+          signal_agent_id:   lead.agentId,
           signal_agent_name: lead.agentName,
         });
         routingSummary.push(`"${lead.name}" → ${lead.agentName || "unrouted"} → draft triggered`);
         console.log(`[trigifyWebhookHandler] Draft triggered for "${lead.name}" via agent "${lead.agentName || "none"}"`);
       } catch (e) {
-        console.warn(`[trigifyWebhookHandler] Draft trigger failed for "${lead.name}":`, e.message);
-        routingSummary.push(`"${lead.name}" → draft trigger FAILED: ${e.message}`);
+        // Fallback: log and continue — draft failure must not fail lead ingestion
+        console.warn(`[trigifyWebhookHandler] Draft trigger failed for "${lead.name}" (will retry manually): ${e.message}`);
+        routingSummary.push(`"${lead.name}" → lead saved, draft pending (${e.message})`);
+        // Attempt a standard fallback draft with no agent context
+        try {
+          await base44.asServiceRole.functions.invoke("generateOutreachDraft", {
+            lead_id: lead.id,
+            org_id:  ORG_ID,
+          });
+          routingSummary.push(`"${lead.name}" → fallback draft triggered successfully`);
+          console.log(`[trigifyWebhookHandler] Fallback draft triggered for "${lead.name}"`);
+        } catch (fallbackErr) {
+          console.warn(`[trigifyWebhookHandler] Fallback draft also failed for "${lead.name}":`, fallbackErr.message);
+        }
       }
     }
 
