@@ -83,6 +83,17 @@ export default function Contacts() {
   useEffect(() => { pageRef.current = page; }, [page]);
   useEffect(() => { searchRef.current = search; }, [search]);
 
+  // Listen for Monara broadcast refreshes (fallback for cases subscription misses)
+  useEffect(() => {
+    const channel = new BroadcastChannel("monara_updates");
+    channel.onmessage = (e) => {
+      if (e.data?.type === "REFRESH_LEAD_DATA") {
+        fetchLeads(pageRef.current, searchRef.current);
+      }
+    };
+    return () => channel.close();
+  }, []);
+
   useEffect(() => {
     const unsubscribe = base44.entities.Lead.subscribe((event) => {
       if (event.type === 'update') {
