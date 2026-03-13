@@ -70,8 +70,8 @@ Deno.serve(async (req) => {
         : updatePayload.internal_notes;
     }
 
-    // Handle append_activity convenience helper
-    if (append_activity && append_activity.description) {
+    // Handle append_activity convenience helper — skip if internal_notes is being updated
+    if (!updatePayload.internal_notes && append_activity && append_activity.description) {
       const existingLog = Array.isArray(lead.activity_log) ? lead.activity_log : [];
       updatePayload.activity_log = [...existingLog, {
         type: append_activity.type || 'note',
