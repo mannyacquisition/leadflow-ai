@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Send, Bot } from "lucide-react";
+import { toast } from "sonner";
 import MonaraMessageBubble from "./MonaraMessageBubble";
+
+// Global broadcast channel — pages listen to this for Monara-triggered refreshes
+export const monaraChannel = new BroadcastChannel("monara_updates");
 
 const INITIAL_MSG = {
   id: "init",
