@@ -109,16 +109,16 @@ function applyAgentScoring(raw, agent) {
 
 Deno.serve(async (req) => {
   try {
-    // --- Webhook secret validation (TEMPORARILY DISABLED FOR TESTING) ---
-    // const secret = Deno.env.get("TRIGIFY_WEBHOOK_SECRET");
-    // if (secret) {
-    //   const headerSecret =
-    //     req.headers.get("x-webhook-secret") || req.headers.get("x-api-key");
-    //   if (headerSecret !== secret) {
-    //     console.warn("[trigifyWebhookHandler] Rejected: invalid webhook secret");
-    //     return Response.json({ error: "Forbidden" }, { status: 403 });
-    //   }
-    // }
+    // --- Webhook secret validation ---
+    const secret = Deno.env.get("TRIGIFY_WEBHOOK_SECRET");
+    if (secret) {
+      const headerSecret =
+        req.headers.get("x-webhook-secret") || req.headers.get("x-api-key");
+      if (headerSecret !== secret) {
+        console.warn("[trigifyWebhookHandler] Rejected: invalid webhook secret");
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     const base44 = createClientFromRequest(req);
     const body = await req.json();
