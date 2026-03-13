@@ -91,6 +91,7 @@ Lead Information:
 - Location: ${lead.location || "N/A"}
 ${profileBaseline}
 ${signalDescription}
+${agentContext}
 
 Sender Context:
 ${companyContext}
