@@ -19,12 +19,12 @@ const ORG_ID = "seed";
 // Keys are Signal Agent name substrings to match; values are keyword lists (lowercased)
 const ROUTING_RULES = [
   {
-    agentNameMatch: "Enterprise Fintech",
-    keywords: ["fintech", "bank", "banking", "payment", "payments", "financial", "finance", "lending", "credit", "insurance", "insurtech"],
+    agentNameMatch: "test agent",
+    keywords: ["fintech", "bank", "banking", "payment", "payments", "financial", "finance", "lending", "credit", "insurance", "insurtech", "saas", "software", "cloud", "platform", "b2b software", "product-led", "plg", "founder", "ceo", "growth"],
   },
   {
-    agentNameMatch: "SaaS Growth",
-    keywords: ["saas", "software", "cloud", "platform", "b2b software", "product-led", "plg"],
+    agentNameMatch: "My Agent",
+    keywords: ["sales", "revenue", "enterprise", "vp sales", "sales director"],
   },
 ];
 
