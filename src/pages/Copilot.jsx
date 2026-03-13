@@ -39,6 +39,18 @@ export default function Copilot() {
   const [messagesByLead, setMessagesByLead] = useState({});
   const [approving, setApproving] = useState(false);
 
+  // Listen for Monara-triggered refreshes
+  useEffect(() => {
+    const channel = new BroadcastChannel("monara_updates");
+    channel.onmessage = (e) => {
+      if (e.data?.type === "REFRESH_LEAD_DATA") {
+        // Re-mark leads as approved if Monara approved them
+        setLeads(prev => prev.map(l => ({ ...l })));
+      }
+    };
+    return () => channel.close();
+  }, []);
+
   const messageText = messagesByLead[selectedLead?.id] ?? `${selectedLead?.name?.split(" ")[0] || "Hi"}, congrats on ${selectedLead?.company || "your venture"}!\n\nQuick q - how many times have you re-explained your product and ICP to GPT / Claude this week?\n\nRecently built Monara, AI consultant that generates your strategy and builds your assets in one click.\n\nDifferent how? It's built on private benchmark data that YC uses, and $100M SaaS playbooks`;
   const setMessageText = (val) => setMessagesByLead(prev => ({ ...prev, [selectedLead.id]: val }));
 
