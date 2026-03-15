@@ -289,7 +289,7 @@ export default function IntentSignalsAccordion({ form, setForm }) {
             Track content mentioning keywords in your niche. Examples: "Cold email", "ISO27001", "Hubspot CRM", etc.
           </p>
           <div className="flex items-center gap-3 mb-3">
-            <SectionLabel>Keywords research <Info className="w-3 h-3 inline text-gray-400" /></SectionLabel>
+            <SectionLabel>Keywords research <Tooltip text="Track people engaging with posts using this keyword. Tips: Broad terms (e.g. AI, sales) = more reach, less precision. Precise terms (e.g. 'AI for B2B sales') = fewer hits, stronger intent. Use quotes for exact phrases, 'AND' to combine words (e.g. 'cold email' AND 'reply rate')."><Info className="w-3 h-3 inline text-gray-400 cursor-pointer" /></Tooltip></SectionLabel>
             <button className="flex items-center gap-1 text-xs text-orange-500 font-medium hover:opacity-80">
               ✨ Generate with AI
             </button>
