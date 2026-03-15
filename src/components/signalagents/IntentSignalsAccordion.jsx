@@ -394,9 +394,9 @@ export default function IntentSignalsAccordion({ form, setForm }) {
           <SectionLabel>Trigger events that suggests buying intent</SectionLabel>
           <div className="space-y-3">
             {[
-              { key: "track_top_profiles", label: "Track top 5% active profile in your ICP (Certainly high reply rate)" },
-              { key: "track_funding_events", label: "Companies that have recently raised funds" },
-              { key: "track_job_changes", label: "Recent job changes (< 90 days)" },
+              { key: "track_top_profiles", label: "Track top 5% active profile in your ICP (Certainly high reply rate)", tooltip: "Identifies highly active LinkedIn users within your target audience. They are more likely to engage and reply, since they post and comment frequently." },
+              { key: "track_funding_events", label: "Companies that have recently raised funds", tooltip: "Perfect for spotting companies in growth mode that are more likely to buy new tools or services." },
+              { key: "track_job_changes", label: "Recent job changes (< 90 days)", tooltip: "People who recently changed roles are more open to exploring new solutions. It's a great time to start a conversation." },
             ].map(item => (
               <div key={item.key} className="flex items-center gap-2">
                 <input
@@ -407,7 +407,7 @@ export default function IntentSignalsAccordion({ form, setForm }) {
                   className="w-4 h-4 accent-purple-600"
                 />
                 <label htmlFor={item.key} className="text-sm text-gray-700 cursor-pointer">{item.label}</label>
-                <Info className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                <Tooltip text={item.tooltip}><Info className="w-3.5 h-3.5 text-gray-300 flex-shrink-0 cursor-pointer" /></Tooltip>
               </div>
             ))}
           </div>
