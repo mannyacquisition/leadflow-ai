@@ -209,7 +209,7 @@ export default function IntentSignalsAccordion({ form, setForm }) {
 
             {/* Company LinkedIn Page */}
             <div>
-              <SectionLabel>Your company LinkedIn Page <Info className="w-3 h-3 inline text-gray-400" /></SectionLabel>
+              <SectionLabel>Your company LinkedIn Page <Tooltip text="Add your company's LinkedIn page to detect people who interact with your brand. This includes likes, comments, or mentions on your company page."><Info className="w-3 h-3 inline text-gray-400 cursor-pointer" /></Tooltip></SectionLabel>
               <input
                 value={form.linkedin_page_url || ""}
                 onChange={e => setForm(f => ({ ...f, linkedin_page_url: e.target.value }))}
