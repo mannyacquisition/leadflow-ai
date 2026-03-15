@@ -221,7 +221,7 @@ export default function IntentSignalsAccordion({ form, setForm }) {
 
             {/* Your LinkedIn Profile */}
             <div>
-              <SectionLabel>Your LinkedIn Profile <Info className="w-3 h-3 inline text-gray-400" /></SectionLabel>
+              <SectionLabel>Your LinkedIn Profile <Tooltip text="Add your personal LinkedIn profile to detect people who interact with your posts. This includes likes, comments, or shares on your profile posts."><Info className="w-3 h-3 inline text-gray-400 cursor-pointer" /></Tooltip></SectionLabel>
               <input
                 value={form.linkedin_profile_url || ""}
                 onChange={e => setForm(f => ({ ...f, linkedin_profile_url: e.target.value }))}
