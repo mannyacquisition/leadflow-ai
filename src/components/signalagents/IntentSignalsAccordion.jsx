@@ -422,7 +422,7 @@ export default function IntentSignalsAccordion({ form, setForm }) {
           badge={competitorsBadge}
         >
           <p className="text-sm text-gray-500 mb-4">See who is engaging with other LinkedIn companies pages.</p>
-          <SectionLabel>Add a LinkedIn URL <Info className="w-3 h-3 inline text-gray-400" /></SectionLabel>
+          <SectionLabel>Add a LinkedIn URL <Tooltip text="Add LinkedIn pages of your competitors, or any company that sells to the same audience. We'll track who engages with them (likes, comments, follows) to surface high-intent leads exploring similar solutions."><Info className="w-3 h-3 inline text-gray-400 cursor-pointer" /></Tooltip></SectionLabel>
 
           <div className="flex gap-2 mb-1">
             <input
