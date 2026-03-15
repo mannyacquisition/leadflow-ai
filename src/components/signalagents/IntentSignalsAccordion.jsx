@@ -353,7 +353,7 @@ export default function IntentSignalsAccordion({ form, setForm }) {
           badge={influencersBadge}
         >
           <p className="text-sm text-gray-500 mb-4">Track influencers, creators or any other LinkedIn profiles in your niche.</p>
-          <SectionLabel>Profiles / Experts / Influencers <Info className="w-3 h-3 inline text-gray-400" /></SectionLabel>
+          <SectionLabel>Profiles / Experts / Influencers <Tooltip text="Add LinkedIn profiles of thought leaders or influencers. You'll track who interacts with them, a great signal that someone is interested in your industry or niche."><Info className="w-3 h-3 inline text-gray-400 cursor-pointer" /></Tooltip></SectionLabel>
 
           <div className="flex gap-2 mb-1">
             <input
