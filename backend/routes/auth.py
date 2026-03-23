@@ -67,39 +67,45 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Check if it's a session token (from OAuth)
-    result = await db.execute(
-        select(UserSession).where(UserSession.session_token == token)
-    )
-    session = result.scalar_one_or_none()
-    
-    if session:
-        # Validate expiry
-        expires_at = session.expires_at
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=401, detail="Session expired")
+    try:
+        # Check if it's a session token (from OAuth)
+        result = await db.execute(
+            select(UserSession).where(UserSession.session_token == token)
+        )
+        session = result.scalar_one_or_none()
         
-        # Get user
-        result = await db.execute(select(User).where(User.id == session.user_id))
+        if session:
+            # Validate expiry
+            expires_at = session.expires_at
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < datetime.now(timezone.utc):
+                raise HTTPException(status_code=401, detail="Session expired")
+            
+            # Get user
+            result = await db.execute(select(User).where(User.id == session.user_id))
+            user = result.scalar_one_or_none()
+            if not user:
+                raise HTTPException(status_code=401, detail="User not found")
+            return user
+        
+        # Otherwise it's a JWT token
+        from utils.auth import decode_jwt_token
+        payload = decode_jwt_token(token)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        result = await db.execute(select(User).where(User.id == payload["sub"]))
         user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        
         return user
-    
-    # Otherwise it's a JWT token
-    from utils.auth import decode_jwt_token
-    payload = decode_jwt_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    result = await db.execute(select(User).where(User.id == payload["sub"]))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Database not configured or other error
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 
 # ─── Routes ──────────────────────────────────────────────────────────────────────

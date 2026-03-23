@@ -45,7 +45,11 @@ Base = declarative_base()
 async def get_db():
     """Dependency for getting database sessions"""
     if AsyncSessionLocal is None:
-        raise Exception("Database not configured. Please set DATABASE_URL in backend/.env")
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=503, 
+            detail="Database not configured. Please set DATABASE_URL in backend/.env"
+        )
     async with AsyncSessionLocal() as session:
         try:
             yield session
