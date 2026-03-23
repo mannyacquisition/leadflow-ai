@@ -10,15 +10,24 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
 
   const checkAuth = useCallback(async () => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
+    // Check if we have a token stored
+    const token = localStorage.getItem('leadflow_token');
+    
+    // If returning from OAuth callback, skip the /me check
     if (window.location.hash?.includes('session_id=')) {
       setIsLoadingAuth(false);
       return;
     }
 
+    if (!token) {
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+      return;
+    }
+
     try {
       setIsLoadingAuth(true);
+      api.setToken(token);
       const currentUser = await api.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
@@ -27,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Auth check failed:', error);
       setIsAuthenticated(false);
       setUser(null);
-      // Don't set authError here - just means user needs to login
+      localStorage.removeItem('leadflow_token');
     } finally {
       setIsLoadingAuth(false);
     }
@@ -40,6 +49,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const result = await api.auth.login({ email, password });
+      api.setToken(result.token);
       setUser(result.user);
       setIsAuthenticated(true);
       setAuthError(null);
@@ -53,6 +63,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, fullName) => {
     try {
       const result = await api.auth.register({ email, password, full_name: fullName });
+      api.setToken(result.token);
       setUser(result.user);
       setIsAuthenticated(true);
       setAuthError(null);
@@ -66,6 +77,7 @@ export const AuthProvider = ({ children }) => {
   const handleGoogleCallback = async (sessionId) => {
     try {
       const result = await api.auth.googleCallback(sessionId);
+      api.setToken(result.token);
       setUser(result.user);
       setIsAuthenticated(true);
       setAuthError(null);
@@ -80,6 +92,7 @@ export const AuthProvider = ({ children }) => {
     await api.auth.logout();
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('leadflow_token');
   };
 
   const navigateToLogin = () => {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { X, Mail, Copy, ChevronDown, ChevronUp, Check, HelpCircle, Trash2, Download, Linkedin, Clock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,12 +44,7 @@ export default function LeadSlideOver({ lead, onClose, onUpdate, onDelete }) {
 
   const handleSaveNotes = async () => {
     setSavingNotes(true);
-    await base44.functions.invoke('updateLeadCrm', {
-      lead_id: lead.id,
-      org_id: lead.org_id,
-      internal_notes: notes,
-      append_activity: { type: 'note', description: 'Internal notes updated' },
-    });
+    // TODO: Implement notes API
     toast.success("Notes saved");
     onUpdate({ ...lead, internal_notes: notes });
     setSavingNotes(false);
@@ -57,11 +52,7 @@ export default function LeadSlideOver({ lead, onClose, onUpdate, onDelete }) {
 
   const handleFitUpdate = async (fit) => {
     setUpdatingFit(true);
-    await base44.functions.invoke('updateLeadCrm', {
-      lead_id: lead.id,
-      org_id: lead.org_id,
-      fit_status: fit,
-    });
+    // TODO: Implement fit update API
     onUpdate({ ...lead, fit_status: fit });
     setUpdatingFit(false);
   };
@@ -69,7 +60,7 @@ export default function LeadSlideOver({ lead, onClose, onUpdate, onDelete }) {
   const handleDelete = async () => {
     if (!confirm(`Delete ${lead.name}? This cannot be undone.`)) return;
     setDeleting(true);
-    await base44.entities.Lead.delete(lead.id);
+    // TODO: Implement delete API
     toast.success("Lead deleted");
     onDelete(lead.id);
     onClose();
