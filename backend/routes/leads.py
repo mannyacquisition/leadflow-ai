@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from database import get_db
 from models import User, LeadRaw, OutreachDraft
 from routes.auth import get_current_user
-from utils.auth import encrypt_api_key
+from utils.auth import encrypt_api_key, decrypt_api_key
 
 router = APIRouter(tags=["Leads & Drafts"])
 
@@ -61,7 +61,27 @@ class StatsResponse(BaseModel):
     replies: int
 
 class UpdateApiKeyRequest(BaseModel):
-    apify_api_token: str
+    apify_api_token: str | None = None
+
+class UpdateUserSettingsRequest(BaseModel):
+    trigify_api_key: str | None = None
+    unipile_api_key: str | None = None
+    netrows_api_key: str | None = None
+
+class CreateLeadRequest(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    job_title: str | None = None
+    company: str | None = None
+    linkedin_url: str | None = None
+    location: str | None = None
+    signal_category: str = "manual"
+    ai_score: int = 2
+
+class UpdateLeadRequest(BaseModel):
+    fit_status: str | None = None
+    ai_score: int | None = None
+    processed: bool | None = None
 
 
 # ─── Leads Routes ────────────────────────────────────────────────────────────────
@@ -301,6 +321,62 @@ async def delete_draft(
     
     return {"message": "Draft deleted successfully"}
 
+@router.post("/leads", response_model=LeadResponse)
+async def create_lead(
+    data: CreateLeadRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create a lead manually (e.g., saved from Lead Database search)"""
+    lead = LeadRaw(
+        user_id=user.id,
+        signal_category=data.signal_category,
+        name=data.name,
+        email=data.email,
+        job_title=data.job_title,
+        company=data.company,
+        linkedin_url=data.linkedin_url,
+        raw_payload={"source": "manual", "location": data.location},
+        ai_score=data.ai_score,
+        processed=False,
+    )
+    db.add(lead)
+    await db.commit()
+    await db.refresh(lead)
+    return LeadResponse(
+        id=lead.id, user_id=lead.user_id, signal_category=lead.signal_category,
+        name=lead.name, email=lead.email, job_title=lead.job_title,
+        company=lead.company, linkedin_url=lead.linkedin_url,
+        ai_score=lead.ai_score, processed=lead.processed, created_at=lead.created_at
+    )
+
+
+@router.patch("/leads/{lead_id}")
+async def update_lead(
+    lead_id: str,
+    data: UpdateLeadRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a lead's fit status or score"""
+    result = await db.execute(
+        select(LeadRaw).where(LeadRaw.id == lead_id, LeadRaw.user_id == user.id)
+    )
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    if data.ai_score is not None:
+        lead.ai_score = data.ai_score
+    if data.processed is not None:
+        lead.processed = data.processed
+    # Store fit_status in raw_payload
+    if data.fit_status is not None:
+        payload = dict(lead.raw_payload or {})
+        payload["fit_status"] = data.fit_status
+        lead.raw_payload = payload
+    await db.commit()
+    return {"message": "Lead updated"}
+
 
 # ─── User Settings ───────────────────────────────────────────────────────────────
 
@@ -310,13 +386,11 @@ async def update_api_keys(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Update user's API keys (stored encrypted)"""
-    if data.apify_api_token:
+    """Update user's Apify API key (stored encrypted)"""
+    if data.apify_api_token is not None:
         user.apify_api_token_encrypted = encrypt_api_key(data.apify_api_token)
-    
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
-    
     return {"message": "API keys updated successfully"}
 
 
@@ -325,6 +399,65 @@ async def get_api_keys_status(
     user: User = Depends(get_current_user)
 ):
     """Check which API keys are configured"""
+    import json
+    settings = {}
+    if user.user_settings_json:
+        try:
+            settings = json.loads(decrypt_api_key(user.user_settings_json))
+        except Exception:
+            settings = {}
     return {
-        "apify_configured": bool(user.apify_api_token_encrypted)
+        "apify_configured": bool(user.apify_api_token_encrypted),
+        "trigify_configured": bool(settings.get("trigify_api_key")),
+        "unipile_configured": bool(settings.get("unipile_api_key")),
+        "netrows_configured": bool(settings.get("netrows_api_key")),
+    }
+
+
+@router.post("/user/settings")
+async def update_user_settings(
+    data: UpdateUserSettingsRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update user's 3rd party API keys (stored encrypted as JSON)"""
+    import json
+    existing = {}
+    if user.user_settings_json:
+        try:
+            existing = json.loads(decrypt_api_key(user.user_settings_json))
+        except Exception:
+            existing = {}
+    if data.trigify_api_key is not None:
+        existing["trigify_api_key"] = data.trigify_api_key
+    if data.unipile_api_key is not None:
+        existing["unipile_api_key"] = data.unipile_api_key
+    if data.netrows_api_key is not None:
+        existing["netrows_api_key"] = data.netrows_api_key
+    user.user_settings_json = encrypt_api_key(json.dumps(existing))
+    user.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"message": "Settings saved successfully"}
+
+
+@router.get("/user/settings")
+async def get_user_settings(
+    user: User = Depends(get_current_user)
+):
+    """Get user's stored API key hints (masked)"""
+    import json
+    settings = {}
+    if user.user_settings_json:
+        try:
+            settings = json.loads(decrypt_api_key(user.user_settings_json))
+        except Exception:
+            settings = {}
+    def mask(v):
+        if not v:
+            return ""
+        return v[:4] + "*" * (len(v) - 4) if len(v) > 4 else "****"
+    return {
+        "trigify_api_key": mask(settings.get("trigify_api_key", "")),
+        "unipile_api_key": mask(settings.get("unipile_api_key", "")),
+        "netrows_api_key": mask(settings.get("netrows_api_key", "")),
     }

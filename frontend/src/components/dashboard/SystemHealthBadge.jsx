@@ -1,27 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { Shield, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function SystemHealthBadge() {
   const [status, setStatus] = useState(null); // null = loading
-  const [errorCount, setErrorCount] = useState(0);
 
   useEffect(() => {
-    checkHealth();
+    api.health().then(() => setStatus("healthy")).catch(() => setStatus("degraded"));
   }, []);
-
-  const checkHealth = async () => {
-    try {
-      const logs = await base44.entities.SystemHealthLog.list("-created_date", 50);
-      const windowStart = Date.now() - 24 * 60 * 60 * 1000;
-      const recent = logs.filter(l => new Date(l.timestamp || l.created_date) > new Date(windowStart));
-      const errors = recent.filter(l => l.status === "error").length;
-      setErrorCount(errors);
-      setStatus(errors > 5 ? "critical" : errors > 0 ? "degraded" : "healthy");
-    } catch (_) {
-      setStatus("healthy"); // If no log entity, assume healthy
-    }
-  };
 
   if (status === null) {
     return (
@@ -34,9 +20,8 @@ export default function SystemHealthBadge() {
 
   const config = {
     healthy: { icon: ShieldCheck, label: "System Healthy", className: "bg-green-50 text-green-700 border-green-200" },
-    degraded: { icon: ShieldAlert, label: `${errorCount} Error(s)`, className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-    critical: { icon: ShieldAlert, label: `${errorCount} Errors`, className: "bg-red-50 text-red-700 border-red-200" },
-  }[status];
+    degraded: { icon: ShieldAlert, label: "Service Issue", className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  }[status] || { icon: ShieldCheck, label: "System Healthy", className: "bg-green-50 text-green-700 border-green-200" };
 
   const Icon = config.icon;
 

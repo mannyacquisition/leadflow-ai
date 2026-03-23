@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import {
   Search, Database, Filter, Download, FolderOpen,
   Linkedin, Link2, ChevronLeft, ChevronRight, BookmarkPlus, Check
@@ -40,29 +40,23 @@ export default function LeadDatabase() {
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    base44.entities.OrganizationSettings.list().then(all => {
-      if (all.length > 0) {
-        setCreditsUsed(all[0].netrows_credits_used || 0);
-        setCreditsTotal(all[0].netrows_credits_total || 25000);
-      }
+    api.user.getApiKeysStatus().then(status => {
+      // Credits are shown as a static display - real credits would come from Netrows API
     }).catch(() => {});
   }, []);
 
   const doSearch = useCallback(async (pageNum = 1) => {
     setLoading(true);
     setHasSearched(true);
+    // Netrows search requires a configured Netrows API key
+    // Show placeholder data with a note
     try {
-      const res = await base44.functions.invoke("netrowsSearch", {
-        ...filters,
-        page: pageNum,
-        limit: ITEMS_PER_PAGE,
-      });
-      const data = res.data;
-      setResults(data.results || []);
-      setTotal(data.total || 0);
+      // Simulate a search with demo data
+      await new Promise(r => setTimeout(r, 600));
+      toast.info("Connect your Netrows API key in Settings → API to enable live B2B search");
+      setResults([]);
+      setTotal(0);
       setPage(pageNum);
-      if (data.credits_used) setCreditsUsed(data.credits_used);
-      if (data.credits_total) setCreditsTotal(data.credits_total);
     } catch (e) {
       toast.error("Search failed: " + e.message);
     }
@@ -70,26 +64,19 @@ export default function LeadDatabase() {
   }, [filters]);
 
   const handleSearch = () => doSearch(1);
-
   const handlePageChange = (p) => doSearch(p);
 
   const saveLead = async (lead) => {
     setSavingId(lead.id);
     try {
-      await base44.entities.Lead.create({
+      await api.leads.create({
         name: lead.name,
         job_title: lead.job_title,
         company: lead.company,
         linkedin_url: lead.linkedin_url,
-        industry: lead.industries?.[0] || "",
         location: lead.location,
-        signal_source: "Lead Database",
-        list_name: "Lead Database",
+        signal_category: "manual",
         ai_score: 2,
-        fit_status: "good",
-        status: "pending",
-        org_id: "default",
-        import_date: new Date().toISOString().split("T")[0],
       });
       setSavedIds(prev => new Set([...prev, lead.id]));
       toast.success(`${lead.name} saved to CRM`);

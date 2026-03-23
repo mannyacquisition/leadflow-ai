@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
+import { useAuth } from "@/lib/AuthProvider";
 import { Settings as SettingsIcon, Users, Building, User, Linkedin, Shield, CreditCard, Key, Mail } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,34 +19,35 @@ const mockMembers = [
 ];
 
 export default function Settings() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("organization");
-  const [user, setUser] = useState(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [members, setMembers] = useState(mockMembers);
-  const [settings, setSettings] = useState({ api_key_trigify: "", api_key_unipile: "", org_name: "" });
+  const [settings, setSettings] = useState({ api_key_trigify: "", api_key_unipile: "", api_key_netrows: "" });
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-    base44.entities.OrganizationSettings.list().then(all => {
-      if (all.length > 0) setSettings(all[0]);
+    api.user.getSettings().then(data => {
+      setSettings({
+        api_key_trigify: data.trigify_api_key || "",
+        api_key_unipile: data.unipile_api_key || "",
+        api_key_netrows: data.netrows_api_key || "",
+      });
     }).catch(() => {});
   }, []);
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
-    await base44.users.inviteUser(inviteEmail, "member");
-    toast.success(`Invitation sent to ${inviteEmail}`);
+    toast.info("Invite feature coming soon");
     setInviteEmail("");
   };
 
   const handleSaveApi = async () => {
     try {
-      const all = await base44.entities.OrganizationSettings.list();
-      if (all.length > 0) {
-        await base44.entities.OrganizationSettings.update(all[0].id, settings);
-      } else {
-        await base44.entities.OrganizationSettings.create(settings);
-      }
+      await api.user.updateSettings({
+        trigify_api_key: settings.api_key_trigify || undefined,
+        unipile_api_key: settings.api_key_unipile || undefined,
+        netrows_api_key: settings.api_key_netrows || undefined,
+      });
       toast.success("Settings saved!");
     } catch (e) {
       toast.error("Save failed");

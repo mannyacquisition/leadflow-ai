@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { Plus, Play, Pause, ChevronRight, ArrowRight, Check, LayoutList } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,16 +18,28 @@ export default function Campaigns() {
   const [showList, setShowList] = useState(true);
 
   useEffect(() => {
-    base44.entities.Campaign.list("-created_date", 50).then(data => {
-      setCampaigns(data);
-      if (data.length > 0) setSelectedCampaign(data[0]);
+    // Build virtual campaigns from signals
+    api.signals.list().then(signals => {
+      const mapped = signals.map(s => ({
+        id: s.id,
+        name: s.name,
+        status: s.status,
+        contacts_count: 0,
+        messages_sent: 0,
+        invitations_sent: 0,
+        replies_count: 0,
+        sender_name: "You",
+        agent_id: s.id,
+      }));
+      setCampaigns(mapped);
+      if (mapped.length > 0) setSelectedCampaign(mapped[0]);
       setLoading(false);
     }).catch(() => { setCampaigns([]); setLoading(false); });
   }, []);
 
   const toggleStatus = async (campaign) => {
     const newStatus = campaign.status === "active" ? "paused" : "active";
-    await base44.entities.Campaign.update(campaign.id, { status: newStatus });
+    await api.signals.updateStatus(campaign.id, newStatus);
     const updated = campaigns.map(c => c.id === campaign.id ? { ...c, status: newStatus } : c);
     setCampaigns(updated);
     if (selectedCampaign?.id === campaign.id) setSelectedCampaign(prev => ({ ...prev, status: newStatus }));

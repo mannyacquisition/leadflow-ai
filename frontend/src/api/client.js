@@ -124,6 +124,16 @@ class APIClient {
     },
     
     stats: () => this.request('/leads/stats'),
+
+    create: (data) => this.request('/leads', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+    update: (id, data) => this.request(`/leads/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
   };
 
   // Drafts endpoints
@@ -153,6 +163,25 @@ class APIClient {
     }),
     
     getApiKeysStatus: () => this.request('/user/api-keys/status'),
+
+    getSettings: () => this.request('/user/settings'),
+
+    updateSettings: (data) => this.request('/user/settings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  };
+
+  // AI Chat / Insights
+  ai = {
+    chat: (message, history = []) => this.request('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, history }),
+    }),
+
+    getInsights: () => this.request('/ai/insights'),
+
+    generateInsights: () => this.request('/ai/insights/generate', { method: 'POST' }),
   };
 
   // Health check

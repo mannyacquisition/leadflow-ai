@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
+import { useAuth } from "@/lib/AuthProvider";
 import { Send, Bot, Sparkles, Zap, Users, BarChart3 } from "lucide-react";
 import MonaraMessageBubble from "../components/monara/MonaraMessageBubble";
 
@@ -11,6 +12,7 @@ const QUICK_COMMANDS = [
 ];
 
 export default function CommandCenter() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: "welcome",
@@ -21,20 +23,7 @@ export default function CommandCenter() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [conversationId, setConversationId] = useState(null);
   const bottomRef = useRef(null);
-
-  useEffect(() => {
-    base44.auth.me().then(user => {
-      return base44.functions.invoke("monaraProxy", {
-        action: "create_conversation",
-        org_id: "default",
-        user_id: user?.id || user?.email,
-      });
-    }).then(res => {
-      if (res.data?.id) setConversationId(res.data.id);
-    }).catch(() => {});
-  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -50,23 +39,24 @@ export default function CommandCenter() {
     setLoading(true);
 
     try {
-      const res = await base44.functions.invoke("monaraProxy", {
-        action: "send_message",
-        conversation_id: conversationId,
-        message: msg,
-      });
-      const assistant = res.data?.latest_assistant_message;
+      // Build history from messages (exclude welcome message)
+      const history = messages
+        .filter(m => m.id !== "welcome")
+        .slice(-8)
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const res = await api.ai.chat(msg, history);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: assistant?.content || "I've processed your request.",
+        content: res.reply || "I've processed your request.",
         rich_type: "text",
       }]);
     } catch (e) {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: "assistant",
-        content: "I'm having trouble processing that request. Please try again.",
+        content: "I'm having trouble connecting to the AI. Please check your Anthropic API key in Settings.",
         rich_type: "text",
       }]);
     }

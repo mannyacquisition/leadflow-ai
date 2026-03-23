@@ -26,6 +26,8 @@ class User(Base):
     
     # Encrypted API tokens (stored encrypted, not plain text)
     apify_api_token_encrypted = Column(Text, nullable=True)
+    # Generic user settings stored as encrypted JSON
+    user_settings_json = Column(Text, nullable=True)
     
     # OAuth fields
     google_id = Column(String(255), nullable=True, unique=True, index=True)

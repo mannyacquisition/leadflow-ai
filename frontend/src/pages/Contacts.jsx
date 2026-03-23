@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { Search, Plus, Download, Mail, Check, X, HelpCircle, ChevronLeft, ChevronRight, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 import LeadSlideOver from "@/components/contacts/LeadSlideOver";
@@ -56,7 +56,7 @@ export default function Contacts() {
   const fetchLeads = async (pageNum, searchTerm) => {
     setLoading(true);
     try {
-      const allLeads = await base44.entities.Lead.list("-created_date", 1000);
+      const allLeads = await api.leads.list({ limit: 100 });
       const filtered = allLeads.filter(l =>
         !searchTerm ||
         l.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,56 +76,18 @@ export default function Contacts() {
     fetchLeads(page, search);
   }, [page, search]);
 
-  // Real-time: sync Lead changes made by Monara or other sessions
-  // Note: use ref for page/search to avoid stale closure
   const pageRef = useRef(page);
   const searchRef = useRef(search);
   useEffect(() => { pageRef.current = page; }, [page]);
   useEffect(() => { searchRef.current = search; }, [search]);
 
-  // Listen for Monara broadcast refreshes (fallback for cases subscription misses)
-  useEffect(() => {
-    const channel = new BroadcastChannel("monara_updates");
-    channel.onmessage = (e) => {
-      if (e.data?.type === "REFRESH_LEAD_DATA") {
-        fetchLeads(pageRef.current, searchRef.current);
-      }
-    };
-    return () => channel.close();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = base44.entities.Lead.subscribe((event) => {
-      if (event.type === 'update') {
-        setLeads(prev => prev.map(l => l.id === event.id ? { ...l, ...event.data } : l));
-        setSelectedLead(prev => prev?.id === event.id ? { ...prev, ...event.data } : prev);
-      } else if (event.type === 'delete') {
-        setLeads(prev => prev.filter(l => l.id !== event.id));
-        setSelectedLead(prev => prev?.id === event.id ? null : prev);
-        setTotal(t => t - 1);
-      } else if (event.type === 'create') {
-        fetchLeads(pageRef.current, searchRef.current);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
   const handleEnrich = async (lead) => {
-    setEnrichingId(lead.id);
-    try {
-      const res = await base44.functions.invoke("enrichEmail", { leadId: lead.id });
-      toast.success(`Email enriched for ${lead.name}`);
-      fetchLeads(page, search);
-    } catch (e) {
-      toast.error("Enrichment failed");
-    }
-    setEnrichingId(null);
+    toast.info("Email enrichment coming soon");
   };
 
   const handleFitUpdate = async (leadId, fit) => {
-    // Optimistic local update — no re-fetch needed (subscription handles remote sync)
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, fit_status: fit } : l));
-    await base44.entities.Lead.update(leadId, { fit_status: fit });
+    api.leads.update(leadId, { fit_status: fit }).catch(() => {});
   };
 
   const totalPages = Math.ceil(total / LEADS_PER_PAGE);

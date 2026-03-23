@@ -1,22 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import React, { useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 
 export default function LeadsStep({ form, setForm }) {
-  const [lists, setLists] = useState([]);
+  const [lists, setLists] = useState([
+    { id: "default", name: "Default List" },
+    { id: "hot", name: "Hot Prospects" },
+  ]);
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newListName, setNewListName] = useState("");
 
-  useEffect(() => {
-    // Try to load lead lists from Campaign entity (using name as list placeholder)
-    base44.entities.Campaign.list("-created_date", 50)
-      .then(data => setLists(data))
-      .catch(() => {});
-  }, []);
-
-  const handleCreateList = async () => {
+  const handleCreateList = () => {
     if (!newListName.trim()) return;
-    const created = await base44.entities.Campaign.create({ name: newListName.trim(), org_id: "default" });
+    const created = { id: `list-${Date.now()}`, name: newListName.trim() };
     setLists(prev => [...prev, created]);
     setForm(f => ({ ...f, lead_list_id: created.id, lead_list_name: created.name }));
     setNewListName("");

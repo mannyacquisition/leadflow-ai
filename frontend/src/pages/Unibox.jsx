@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
+import { useAuth } from "@/lib/AuthProvider";
 import { Send, Search, Filter, Edit, Linkedin, Globe, Loader2, Bot, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Unibox() {
+  const { user } = useAuth();
   const [leads, setLeads] = useState([]);
   const [messagesByLead, setMessagesByLead] = useState({});
   const [selectedLead, setSelectedLead] = useState(null);
@@ -11,13 +13,7 @@ export default function Unibox() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [user, setUser] = useState(null);
   const bottomRef = useRef(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-    loadData();
-  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,98 +22,70 @@ export default function Unibox() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load all messages, group by lead
-      const [allMessages, allLeads] = await Promise.all([
-        base44.entities.Message.list("-created_date", 500),
-        base44.entities.Lead.list("-created_date", 200),
+      // Load leads and drafts - show drafts as "conversations"
+      const [allDrafts, allLeads] = await Promise.all([
+        api.drafts.list({ limit: 200 }),
+        api.leads.list({ limit: 200 }),
       ]);
 
-      // Group messages by lead_id
+      // Build lead map
+      const leadMap = {};
+      for (const l of allLeads) leadMap[l.id] = l;
+
+      // Group drafts by lead_id as "messages"
       const byLead = {};
-      for (const msg of allMessages) {
-        const key = msg.lead_id || msg.sender_name;
+      for (const draft of allDrafts) {
+        const key = draft.lead_id;
         if (!byLead[key]) byLead[key] = [];
-        byLead[key].push(msg);
+        byLead[key].push({
+          id: draft.id,
+          lead_id: draft.lead_id,
+          sender_name: "AI Agent",
+          recipient_name: draft.lead_name,
+          body: `Subject: ${draft.subject || "(no subject)"}\n\n${draft.body}`,
+          direction: "outbound",
+          created_date: draft.created_at,
+          is_read: true,
+          status: draft.status,
+        });
       }
-      // Sort each conversation oldest first
-      for (const key of Object.keys(byLead)) {
-        byLead[key].sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
-      }
+
+      // Build conversation leads list
+      const leadsWithDrafts = allDrafts
+        .map(d => d.lead_id)
+        .filter((id, i, arr) => arr.indexOf(id) === i)
+        .map(id => {
+          const d = allDrafts.find(d => d.lead_id === id);
+          return leadMap[id] || {
+            id,
+            name: d?.lead_name || "Unknown",
+            job_title: d?.lead_job_title,
+            company: d?.lead_company,
+            linkedin_url: d?.lead_linkedin_url,
+          };
+        });
+
       setMessagesByLead(byLead);
-
-      // Build conversation list: leads that have messages, or inbound senders
-      const leadsWithMessages = allLeads.filter(l => byLead[l.id]?.length > 0);
-
-      // Also add leads from inbound messages that may not have a Lead record
-      const leadIds = new Set(leadsWithMessages.map(l => l.id));
-      const standaloneMessages = allMessages.filter(m => m.lead_id && !leadIds.has(m.lead_id));
-      const standaloneLeadIds = [...new Set(standaloneMessages.map(m => m.lead_id))];
-
-      const standaloneLeads = standaloneLeadIds.map(id => {
-        const msgs = byLead[id] || [];
-        const latest = msgs[msgs.length - 1] || msgs[0];
-        return {
-          id,
-          name: latest?.sender_name || latest?.recipient_name || "Unknown",
-          job_title: null,
-          company: null,
-          avatar_url: null,
-          _isSynthetic: true,
-        };
-      });
-
-      const allConvLeads = [...leadsWithMessages, ...standaloneLeads];
-      // Sort by latest message date
-      allConvLeads.sort((a, b) => {
-        const aLatest = (byLead[a.id] || []).slice(-1)[0]?.created_date || "";
-        const bLatest = (byLead[b.id] || []).slice(-1)[0]?.created_date || "";
-        return bLatest.localeCompare(aLatest);
-      });
-
-      setLeads(allConvLeads);
-      if (allConvLeads.length > 0 && !selectedLead) {
-        setSelectedLead(allConvLeads[0]);
+      setLeads(leadsWithDrafts);
+      if (leadsWithDrafts.length > 0 && !selectedLead) {
+        setSelectedLead(leadsWithDrafts[0]);
       }
     } catch (e) {
       console.error(e);
-      toast.error("Failed to load inbox");
     }
     setLoading(false);
   };
 
-  // Real-time subscription
-  useEffect(() => {
-    const unsub = base44.entities.Message.subscribe((event) => {
-      if (event.type === "create") {
-        const msg = event.data;
-        const key = msg.lead_id || msg.sender_name;
-        setMessagesByLead(prev => {
-          const existing = prev[key] || [];
-          return { ...prev, [key]: [...existing, msg] };
-        });
-        // If it's a Monara alert / inbound, refresh lead list
-        if (msg.direction === "inbound") {
-          loadData();
-        }
-      }
-    });
-    return () => unsub();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedLead || sending) return;
     setSending(true);
-
-    const orgId = selectedLead.org_id || "default";
-
-    // Optimistic update
     const optimisticMsg = {
       id: `opt-${Date.now()}`,
       lead_id: selectedLead.id,
       sender_name: user?.full_name || "You",
-      recipient_name: selectedLead.name,
       body: newMessage.trim(),
-      channel: "linkedin",
       direction: "outbound",
       created_date: new Date().toISOString(),
       is_read: true,
@@ -127,18 +95,7 @@ export default function Unibox() {
       [selectedLead.id]: [...(prev[selectedLead.id] || []), optimisticMsg],
     }));
     setNewMessage("");
-
-    try {
-      await base44.functions.invoke("sendMessage", {
-        lead_id: selectedLead.id,
-        org_id: orgId,
-        body: optimisticMsg.body,
-        channel: "linkedin",
-      });
-      toast.success("Message sent");
-    } catch (e) {
-      toast.error("Failed to send — saved locally");
-    }
+    toast.success("Message queued (send functionality coming soon)");
     setSending(false);
   };
 
