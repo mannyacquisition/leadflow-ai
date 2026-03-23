@@ -59,8 +59,8 @@ async def summarize_history_if_needed(messages: list[dict]) -> list[dict]:
 
     try:
         import anthropic
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        resp = client.messages.create(
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        resp = await client.messages.create(
             model="claude-sonnet-4-5-20250929",
             max_tokens=1024,
             messages=[{"role": "user", "content": summary_prompt}],
@@ -130,7 +130,7 @@ async def call_llm(
 
 async def _call_anthropic(model, system_prompt, messages, temperature, tools=None) -> dict:
     import anthropic
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
     kwargs = dict(
         model=model,
@@ -142,7 +142,7 @@ async def _call_anthropic(model, system_prompt, messages, temperature, tools=Non
     if tools:
         kwargs["tools"] = tools
 
-    resp = client.messages.create(**kwargs)
+    resp = await client.messages.create(**kwargs)
     tool_calls = []
     text_content = ""
     for block in resp.content:

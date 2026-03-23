@@ -49,6 +49,8 @@ async def execute_tool(tool: dict, input_data: dict) -> dict:
             return await _execute_oauth2_rest(tool, input_data)
         elif integration_type == "webhook":
             return await _execute_rest(tool, input_data, method="POST")
+        elif integration_type == "apify":
+            return await _execute_apify(tool, input_data)
         else:
             return {"success": False, "output": None, "error": f"Unknown integration type: {integration_type}"}
     except Exception as e:
@@ -205,6 +207,78 @@ async def _execute_smtp(tool: dict, input_data: dict) -> dict:
         return {"success": True, "output": {"sent_to": to_email}, "error": None}
     except Exception as e:
         return {"success": False, "output": None, "error": f"SMTP error: {str(e)}"}
+
+
+async def _execute_apify(tool: dict, input_data: dict) -> dict:
+    """
+    Execute an Apify actor run and poll for results.
+    tool.endpoint_url should be the actor ID (e.g. "lhotanova~google-news-scraper").
+    tool auth_headers should contain {"Authorization": "Bearer <apify_token>"}.
+    input_data is passed as the actor run input body.
+    """
+    headers = _decrypt_headers(tool.get("auth_headers_encrypted"))
+    actor_id = tool.get("endpoint_url", "").strip("/")
+    if not actor_id:
+        return {"success": False, "output": None, "error": "Apify actor ID (endpoint_url) not set"}
+
+    # Extract token from Authorization header or bare "token" key
+    token = (
+        headers.get("token")
+        or headers.get("x-apify-token")
+        or headers.get("Authorization", "").replace("Bearer ", "")
+    )
+    if not token:
+        return {"success": False, "output": None, "error": "Apify token not configured in auth_headers"}
+
+    schema = tool.get("openapi_schema") or {}
+    max_items = schema.get("max_items", 5)
+    poll_timeout = schema.get("poll_timeout_seconds", 60)
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Start actor run
+            run_resp = await client.post(
+                f"https://api.apify.com/v2/acts/{actor_id}/runs",
+                params={"token": token},
+                json=input_data,
+            )
+            if run_resp.status_code not in (200, 201):
+                return {"success": False, "output": None, "error": f"Apify start failed: {run_resp.status_code} {run_resp.text[:200]}"}
+
+            run_id = run_resp.json().get("data", {}).get("id")
+            if not run_id:
+                return {"success": False, "output": None, "error": "No run ID returned from Apify"}
+
+            # Poll for completion
+            elapsed = 0
+            while elapsed < poll_timeout:
+                await asyncio.sleep(2)
+                elapsed += 2
+                status_resp = await client.get(
+                    f"https://api.apify.com/v2/actor-runs/{run_id}",
+                    params={"token": token},
+                )
+                if status_resp.status_code == 200:
+                    run_status = status_resp.json().get("data", {}).get("status", "")
+                    if run_status in ("SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"):
+                        break
+
+            if run_status != "SUCCEEDED":
+                return {"success": False, "output": None, "error": f"Apify actor run ended with status: {run_status}"}
+
+            # Fetch dataset items
+            items_resp = await client.get(
+                f"https://api.apify.com/v2/actor-runs/{run_id}/dataset/items",
+                params={"token": token, "limit": max_items},
+            )
+            items_resp.raise_for_status()
+            items = items_resp.json()
+            return {"success": True, "output": items, "error": None}
+
+    except httpx.TimeoutException:
+        return {"success": False, "output": None, "error": "Apify request timed out"}
+    except Exception as e:
+        return {"success": False, "output": None, "error": str(e)}
 
 
 def format_tool_for_claude(tool: dict) -> dict:

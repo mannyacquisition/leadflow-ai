@@ -26,9 +26,9 @@ export default function AdminShell({ children }) {
     );
   }
 
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/Login" />;
 
-  if (!user.is_admin) {
+  if (!user?.is_admin) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-950 text-white flex-col gap-4">
         <Shield className="w-10 h-10 text-purple-400" />
@@ -36,7 +36,7 @@ export default function AdminShell({ children }) {
           <h2 className="text-xl font-bold">Admin Access Required</h2>
           <p className="text-gray-400 text-sm mt-1">You need admin privileges to access this area.</p>
         </div>
-        <Link to="/dashboard" className="text-purple-400 hover:underline text-sm">← Back to Dashboard</Link>
+        <Link to="/Dashboard" className="text-purple-400 hover:underline text-sm">← Back to Dashboard</Link>
       </div>
     );
   }

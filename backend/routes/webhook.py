@@ -52,38 +52,61 @@ class WebhookPayload(BaseModel):
 
 async def process_lead_async(lead_id: str, user_id: str, signal_category: str):
     """
-    Background task to process lead with AI agent
-    Runs asynchronously so it doesn't block webhook response
+    Background task to process lead.
+    Uses God Mode GraphExecutor if user has active agent_configs,
+    otherwise falls back to legacy workers.
     """
     async with AsyncSessionLocal() as db:
         try:
-            # Get lead
             result = await db.execute(select(LeadRaw).where(LeadRaw.id == lead_id))
             lead = result.scalar_one_or_none()
-            
             if not lead:
-                print(f"Lead {lead_id} not found for processing")
                 return
-            
-            # Get user
+
             result = await db.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
-            
             if not user:
-                print(f"User {user_id} not found for lead processing")
                 return
-            
-            # Route to appropriate AI agent
-            draft = await route_to_agent(signal_category, lead, db, user)
-            
-            if draft:
-                # Mark lead as processed
-                lead.processed = True
-                await db.commit()
-                print(f"Successfully processed lead {lead_id} with {signal_category} agent")
+
+            # Check if user has God Mode agent configs
+            from models import AgentConfig
+            from sqlalchemy import func
+            agent_count = (
+                await db.execute(
+                    select(func.count(AgentConfig.id)).where(
+                        AgentConfig.user_id == user_id,
+                        AgentConfig.is_active.is_(True),
+                    )
+                )
+            ).scalar() or 0
+
+            if agent_count > 0:
+                # ── God Mode path ─────────────────────────────────────────────
+                import uuid
+                from services.orchestrator import GraphExecutor
+                thread_id = f"wh-{uuid.uuid4().hex[:12]}"
+                executor = GraphExecutor(db=db)
+                state = await executor.run(
+                    thread_id=thread_id,
+                    lead_payload=lead.raw_payload or {},
+                    user_id=user_id,
+                    signal_category=signal_category,
+                    dry_run=False,
+                )
+                if state.status in ("completed", "pending_human_approval"):
+                    lead.processed = True
+                    await db.commit()
+                print(f"God Mode processed lead {lead_id} — status: {state.status}")
             else:
-                print(f"Failed to generate draft for lead {lead_id}")
-                
+                # ── Legacy fallback ───────────────────────────────────────────
+                draft = await route_to_agent(signal_category, lead, db, user)
+                if draft:
+                    lead.processed = True
+                    await db.commit()
+                    print(f"Legacy agent processed lead {lead_id} with {signal_category}")
+                else:
+                    print(f"Failed to generate draft for lead {lead_id}")
+
         except Exception as e:
             print(f"Error processing lead {lead_id}: {e}")
 
