@@ -46,10 +46,16 @@ class APIClient {
 
   // Auth endpoints
   auth = {
-    register: (data) => this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    register: async (data) => {
+      const result = await this.request('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (result.token) {
+        this.setToken(result.token);
+      }
+      return result;
+    },
     
     login: async (data) => {
       const result = await this.request('/auth/login', {
