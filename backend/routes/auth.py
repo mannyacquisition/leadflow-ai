@@ -201,10 +201,11 @@ async def google_callback(data: GoogleCallbackRequest, response: Response, db: A
     Frontend redirects here after receiving session_id from Emergent Auth
     """
     # Exchange session_id for user data with Emergent Auth
+    emergent_auth_url = os.environ.get('EMERGENT_AUTH_URL', 'https://demobackend.emergentagent.com')
     async with httpx.AsyncClient() as client:
         try:
             res = await client.get(
-                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                f"{emergent_auth_url}/auth/v1/env/oauth/session-data",
                 headers={"X-Session-ID": data.session_id},
                 timeout=10.0
             )
