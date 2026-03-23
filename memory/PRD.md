@@ -46,16 +46,20 @@ All 12 architectural gaps resolved:
 
 **Frontend:**
 - `hooks/useMonaraSync.js` — WebSocket mutation event bus (auto-reconnect, typed handlers)
-- `components/monara/MonaraPanel.jsx` — full SSE streaming chat UI, word-by-word tokens, inline confirm/cancel, tool_status indicators, New Chat button
+- `components/monara/MonaraPanel.jsx` — full SSE streaming chat UI, word-by-word tokens, inline confirm/cancel, tool_status indicators, New Chat button, "What can you do?" shortcut chip
 - `Layout.jsx` — useMonaraSync(user.id) wired at login
+
+### Phase 7 Seeder (COMPLETE — 2026-03-24)
+- `seed_agents.py` run successfully: 5 SDR agents + Monara seeded into `agent_configs`
+- `manny@monara.vip` set to `is_admin=true`
+- 5 `workflow_edges` (on_webhook per signal category) created
+- Apify Google News Scraper tool seeded + linked to Trigger Event SDR via `agent_tools_junction`
 
 ---
 
 ## Prioritized Backlog
 
 ### P0 (Next)
-- **Seeder**: Seed agent_configs with the 5 legacy SDR agents + Monara node so Agent Studio shows them
-- Set is_admin=true for manny@monara.vip in Supabase
 - End-to-end test: wire Apify → webhook → God Mode with a real agent_config that has output_type=email_draft → verify OutreachDraft appears in Unibox
 
 ### P1

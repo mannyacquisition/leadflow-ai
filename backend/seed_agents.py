@@ -307,13 +307,13 @@ async def seed():
 
             # Link tool to Trigger Event agent via junction table
             res = await db.execute(
-                text("SELECT id FROM agent_tools_junction WHERE agent_id = :aid AND tool_id = :tid"),
+                text("SELECT id FROM agent_tools_junction WHERE agent_config_id = :aid AND tool_registry_id = :tid"),
                 {"aid": trigger_id, "tid": tool_id},
             )
             if not res.fetchone():
                 junc_id = gen_id()
                 await db.execute(
-                    text("INSERT INTO agent_tools_junction (id, agent_id, tool_id) VALUES (:id, :aid, :tid)"),
+                    text("INSERT INTO agent_tools_junction (id, agent_config_id, tool_registry_id) VALUES (:id, :aid, :tid)"),
                     {"id": junc_id, "aid": trigger_id, "tid": tool_id},
                 )
                 print(f"[OK] Linked Apify tool to Trigger Event SDR")

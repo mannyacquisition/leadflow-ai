@@ -221,6 +221,75 @@ export default function MonaraPanel({ isOpen, onClose }) {
     }
   };
 
+  const handleShortcut = useCallback(async (text) => {
+    if (streaming) return;
+    appendMsg({ role: "user", content: text, type: "text" });
+    setStreaming(true);
+    setStreamingText("");
+
+    let currentSessionId = sessionId;
+    let accText = "";
+    let pendingConfirmation = null;
+
+    try {
+      for await (const event of streamChat(currentSessionId, text)) {
+        if (event.type === "token") {
+          accText += event.content;
+          setStreamingText(accText);
+        } else if (event.type === "tool_status") {
+          appendMsg({ role: "assistant", content: event.message, type: "tool_status" });
+        } else if (event.type === "confirmation_required") {
+          pendingConfirmation = event;
+          if (!currentSessionId && event.session_id) {
+            currentSessionId = event.session_id;
+            setSessionId(event.session_id);
+          }
+        } else if (event.type === "done") {
+          if (!currentSessionId && event.session_id) {
+            currentSessionId = event.session_id;
+            setSessionId(event.session_id);
+          }
+        } else if (event.type === "error") {
+          appendMsg({ role: "assistant", content: `Error: ${event.message}`, type: "text" });
+        }
+      }
+    } catch {
+      appendMsg({ role: "assistant", content: "Connection error. Please try again.", type: "text" });
+    }
+
+    if (accText) {
+      appendMsg({ role: "assistant", content: accText, type: "text" });
+      setStreamingText("");
+    }
+
+    if (pendingConfirmation) {
+      const sid = currentSessionId;
+      appendMsg({
+        role: "system",
+        type: "confirmation_required",
+        label: pendingConfirmation.label,
+        content: pendingConfirmation.label,
+        onConfirm: async () => {
+          setMessages((prev) => prev.filter((m) => m.type !== "confirmation_required"));
+          try {
+            const result = await api.request(`/monara/confirm/${sid}`, { method: "POST" });
+            appendMsg({ role: "assistant", content: result.message, type: "text" });
+          } catch {
+            appendMsg({ role: "assistant", content: "Action failed.", type: "text" });
+          }
+        },
+        onCancel: async () => {
+          setMessages((prev) => prev.filter((m) => m.type !== "confirmation_required"));
+          try {
+            await api.request(`/monara/cancel/${sid}`, { method: "POST" });
+          } catch {}
+        },
+      });
+    }
+
+    setStreaming(false);
+  }, [streaming, sessionId]);
+
   const handleNewChat = async () => {
     try {
       const s = await api.request("/monara/session", { method: "POST", body: JSON.stringify({}) });
@@ -304,31 +373,44 @@ export default function MonaraPanel({ isOpen, onClose }) {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t bg-white px-3 py-2.5 flex items-end gap-2">
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask Monara anything…"
-          rows={1}
-          disabled={streaming}
-          className="flex-1 resize-none text-sm border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300 max-h-24 overflow-y-auto disabled:opacity-50"
-          style={{ lineHeight: "1.4" }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={streaming || !input.trim()}
-          data-testid="monara-send-btn"
-          className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition-opacity"
-          style={{ backgroundColor: "#ff5a1f" }}
-        >
-          {streaming ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-        </button>
+      <div className="flex-shrink-0 border-t bg-white px-3 py-2.5">
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask Monara anything…"
+            rows={1}
+            disabled={streaming}
+            className="flex-1 resize-none text-sm border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300 max-h-24 overflow-y-auto disabled:opacity-50"
+            style={{ lineHeight: "1.4" }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={streaming || !input.trim()}
+            data-testid="monara-send-btn"
+            className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition-opacity"
+            style={{ backgroundColor: "#ff5a1f" }}
+          >
+            {streaming ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+        {/* Shortcut chip */}
+        <div className="mt-1.5">
+          <button
+            onClick={() => handleShortcut("What can you do?")}
+            disabled={streaming}
+            data-testid="monara-what-can-you-do-btn"
+            className="text-xs px-3 py-1 rounded-full border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:opacity-40 transition-colors"
+          >
+            What can you do?
+          </button>
+        </div>
       </div>
     </div>
   );
