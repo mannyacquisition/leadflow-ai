@@ -86,6 +86,13 @@ class TrackedSignal(Base):
     track_funding_events = Column(Boolean, default=False)
     track_job_changes = Column(Boolean, default=False)
     competitor_urls = Column(JSON, default=list)
+    # ── Phase 6 AI Hub config ──────────────────────────────────────────────────
+    offer_id = Column(String(36), ForeignKey('user_offers.id', ondelete='SET NULL'), nullable=True)
+    playbook_id = Column(String(36), ForeignKey('user_playbooks.id', ondelete='SET NULL'), nullable=True)
+    tone_id = Column(String(100), nullable=True)
+    kb_file_ids = Column(JSONB, default=list)
+    battlecard_ids = Column(JSONB, default=list)
+    is_autopilot = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=utc_now)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     user = relationship('User', back_populates='tracked_signals')
@@ -289,4 +296,70 @@ class ExecutionState(Base):
 
     user = relationship('User', back_populates='execution_states')
     current_agent = relationship('AgentConfig', foreign_keys=[current_agent_id], back_populates='execution_states')
+
+
+# ─── Phase 6 AI Hub Tables ────────────────────────────────────────────────────
+
+class UserOffer(Base):
+    """User's product/offer definitions for AI context injection"""
+    __tablename__ = 'user_offers'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    internal_name = Column(String(255), nullable=False)
+    external_name = Column(String(255), nullable=True)
+    website_url = Column(Text, nullable=True)
+    industry = Column(String(255), nullable=True)
+    icp = Column(Text, nullable=True)
+    pain_points = Column(Text, nullable=True)
+    cost_of_inaction = Column(Text, nullable=True)
+    solution_benefits = Column(Text, nullable=True)
+    social_proof = Column(Text, nullable=True)
+    offering_description = Column(Text, nullable=True)
+    problem_solved = Column(Text, nullable=True)
+    differentiator = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class UserPlaybook(Base):
+    """Outreach sequence templates with Do/Don't guidelines"""
+    __tablename__ = 'user_playbooks'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    initial_email_template = Column(Text, nullable=True)
+    follow_up_template = Column(Text, nullable=True)
+    connect_message_template = Column(Text, nullable=True)
+    do_guidelines = Column(Text, nullable=True)
+    dont_guidelines = Column(Text, nullable=True)
+    cadence_rules = Column(JSONB, default=dict)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class UserBattlecard(Base):
+    """Objection handling cards for AI rebuttal injection"""
+    __tablename__ = 'user_battlecards'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    objection_type = Column(String(255), nullable=False)
+    rebuttal_strategy = Column(Text, nullable=True)
+    example_response = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class UserGuardrails(Base):
+    """Per-user global safety constraints for AI generation"""
+    __tablename__ = 'user_guardrails'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    blocked_keywords = Column(JSONB, default=list)
+    hard_rules = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 

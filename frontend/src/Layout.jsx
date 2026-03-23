@@ -5,13 +5,14 @@ import { useAuth } from "@/lib/AuthProvider";
 import {
   LayoutDashboard, Bot, Megaphone, Users, Zap,
   Inbox, BarChart3, Puzzle, Settings, Bell, Gift,
-  ChevronDown, LogOut, User, Terminal, Database, Shield
+  ChevronDown, LogOut, User, Terminal, Database, Shield, BrainCircuit
 } from "lucide-react";
 import MonaraPanel from "@/components/monara/MonaraPanel";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
   { label: "Copilot", icon: Bot, page: "Copilot", badge: "New" },
+  { label: "AI Hub", icon: BrainCircuit, page: "AiHub" },
   { label: "Campaigns", icon: Megaphone, page: "Campaigns" },
   { label: "Contacts", icon: Users, page: "Contacts" },
   { label: "Signals Agents", icon: Zap, page: "SignalsAgents" },

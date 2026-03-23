@@ -10,11 +10,107 @@ from anthropic import AsyncAnthropic
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from models import LeadRaw, OutreachDraft, User
+from models import LeadRaw, OutreachDraft, User, UserOffer, UserPlaybook, UserBattlecard, UserGuardrails, TrackedSignal
 from utils.auth import decrypt_api_key
 
 # Initialize Anthropic client (user must provide ANTHROPIC_API_KEY)
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+
+TONE_DESCRIPTIONS = {
+    "formal_professional": "Formal & Professional — authoritative, polished language.",
+    "casual_friendly": "Casual & Friendly — warm, approachable, conversational.",
+    "persuasive_results": "Persuasive & Results-Driven — focused on outcomes and ROI.",
+    "consultative_insightful": "Consultative & Insightful — thought-leader, advisory tone.",
+    "provocative_challenger": "Provocative & Challenger — challenge the status quo, disrupt assumptions.",
+    "empathetic_solution": "Empathetic & Solution-Oriented — lead with understanding the pain.",
+    "direct_nononsense": "Direct & No-Nonsense — short, blunt, zero fluff.",
+    "witty_engaging": "Witty & Engaging — clever, memorable, a little humor.",
+    "enthusiastic_visionary": "Enthusiastic & Visionary — energetic, big-picture thinking.",
+    "data_analytical": "Data-Driven & Analytical — numbers, benchmarks, proof points.",
+}
+
+
+async def build_campaign_context(campaign: TrackedSignal, db: AsyncSession) -> str:
+    """
+    Fetch the offer, playbook, battlecards, and guardrails attached to a campaign
+    and return a formatted context block to prepend to any agent system prompt.
+    """
+    blocks = []
+
+    # Tone
+    if campaign.tone_id:
+        tone_desc = TONE_DESCRIPTIONS.get(campaign.tone_id, campaign.tone_id)
+        blocks.append(f"# TONE\n{tone_desc}")
+
+    # Offer
+    if campaign.offer_id:
+        res = await db.execute(select(UserOffer).where(UserOffer.id == campaign.offer_id))
+        offer = res.scalar_one_or_none()
+        if offer:
+            parts = [f"# OFFER: {offer.internal_name}"]
+            if offer.icp:
+                parts.append(f"ICP: {offer.icp}")
+            if offer.pain_points:
+                parts.append(f"Pain Points: {offer.pain_points}")
+            if offer.solution_benefits:
+                parts.append(f"Solution Benefits: {offer.solution_benefits}")
+            if offer.differentiator:
+                parts.append(f"Differentiator: {offer.differentiator}")
+            if offer.problem_solved:
+                parts.append(f"Problem Solved: {offer.problem_solved}")
+            if offer.offering_description:
+                parts.append(f"Offering: {offer.offering_description}")
+            if offer.social_proof:
+                parts.append(f"Social Proof: {offer.social_proof}")
+            blocks.append("\n".join(parts))
+
+    # Playbook
+    if campaign.playbook_id:
+        res = await db.execute(select(UserPlaybook).where(UserPlaybook.id == campaign.playbook_id))
+        pb = res.scalar_one_or_none()
+        if pb:
+            parts = [f"# PLAYBOOK: {pb.name}"]
+            if pb.initial_email_template:
+                parts.append(f"Initial Email Template:\n{pb.initial_email_template}")
+            if pb.do_guidelines:
+                parts.append(f"DO:\n{pb.do_guidelines}")
+            if pb.dont_guidelines:
+                parts.append(f"DON'T:\n{pb.dont_guidelines}")
+            blocks.append("\n".join(parts))
+
+    # Battlecards
+    if campaign.battlecard_ids:
+        res = await db.execute(
+            select(UserBattlecard).where(
+                UserBattlecard.id.in_(campaign.battlecard_ids),
+                UserBattlecard.user_id == campaign.user_id,
+            )
+        )
+        cards = res.scalars().all()
+        if cards:
+            parts = ["# OBJECTION HANDLING"]
+            for c in cards:
+                parts.append(f'Objection — "{c.objection_type}":')
+                if c.rebuttal_strategy:
+                    parts.append(f"  Strategy: {c.rebuttal_strategy}")
+                if c.example_response:
+                    parts.append(f"  Example: {c.example_response}")
+            blocks.append("\n".join(parts))
+
+    # Guardrails
+    res = await db.execute(select(UserGuardrails).where(UserGuardrails.user_id == campaign.user_id))
+    guardrails = res.scalar_one_or_none()
+    if guardrails:
+        parts = ["# STRICT GUARDRAILS"]
+        if guardrails.blocked_keywords:
+            parts.append(f"NEVER use these words or phrases: {', '.join(guardrails.blocked_keywords)}")
+        if guardrails.hard_rules:
+            parts.append(guardrails.hard_rules)
+        blocks.append("\n".join(parts))
+
+    if not blocks:
+        return ""
+    return "\n\n".join(blocks) + "\n\n---\n\n"
 
 
 async def get_claude_client(api_key: str = None) -> AsyncAnthropic:
@@ -430,17 +526,50 @@ async def route_to_agent(
     signal_category: str,
     lead: LeadRaw,
     db: AsyncSession,
-    user: User
+    user: User,
+    campaign: Optional["TrackedSignal"] = None,
 ) -> Optional[OutreachDraft]:
-    """Route lead to appropriate AI agent based on signal category"""
+    """
+    Route lead to appropriate AI agent based on signal category.
+    If campaign is provided, inject hub context (offer, playbook, tone, battlecards, guardrails)
+    and honour the is_autopilot flag.
+    """
     agent_func = AGENT_MAP.get(signal_category)
-    
+
     if not agent_func:
         print(f"Unknown signal category: {signal_category}")
         return None
-    
+
     try:
-        return await agent_func(lead, db, user)
+        # Build campaign context prefix if available
+        if campaign:
+            ctx_prefix = await build_campaign_context(campaign, db)
+        else:
+            ctx_prefix = ""
+
+        # Temporarily patch the agent's system prompt with campaign context
+        # We do this by wrapping generate_email_with_claude
+        original_gen = globals().get("generate_email_with_claude")
+        if ctx_prefix and original_gen:
+            import functools
+            async def _patched(client, system_prompt, lead_ctx, max_tokens=1024):
+                return await original_gen(client, ctx_prefix + system_prompt, lead_ctx, max_tokens)
+            # Inject into the module-level function via closure
+            import agents.workers as _self_mod
+            _self_mod.generate_email_with_claude = _patched
+
+        draft = await agent_func(lead, db, user)
+
+        # Restore original function
+        if ctx_prefix and original_gen:
+            _self_mod.generate_email_with_claude = original_gen
+
+        # Handle autopilot flag
+        if draft and campaign and campaign.is_autopilot:
+            draft.status = "sent"
+            await db.commit()
+
+        return draft
     except Exception as e:
         print(f"Error in {signal_category} agent: {e}")
         return None

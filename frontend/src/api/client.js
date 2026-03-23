@@ -21,7 +21,8 @@ class APIClient {
 
   async request(endpoint, options = {}) {
     const url = `${API_BASE}/api${endpoint}`;
-    const headers = {
+    const isFormData = options.isFormData === true;
+    const headers = isFormData ? {} : {
       'Content-Type': 'application/json',
       ...options.headers,
     };
@@ -30,10 +31,11 @@ class APIClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
+    const { isFormData: _drop, ...fetchOptions } = options;
     const response = await fetch(url, {
-      ...options,
+      ...fetchOptions,
       headers,
-      credentials: 'include', // Include cookies for session auth
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -186,6 +188,41 @@ class APIClient {
 
   // Health check
   health = () => this.request('/health');
+
+  // AI Hub
+  hub = {
+    // Offers
+    listOffers: () => this.request('/hub/offers'),
+    createOffer: (data) => this.request('/hub/offers', { method: 'POST', body: JSON.stringify(data) }),
+    updateOffer: (id, data) => this.request(`/hub/offers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteOffer: (id) => this.request(`/hub/offers/${id}`, { method: 'DELETE' }),
+    scrapeOffer: (url) => this.request('/hub/offers/scrape', { method: 'POST', body: JSON.stringify({ url }) }),
+
+    // Playbooks
+    listPlaybooks: () => this.request('/hub/playbooks'),
+    createPlaybook: (data) => this.request('/hub/playbooks', { method: 'POST', body: JSON.stringify(data) }),
+    updatePlaybook: (id, data) => this.request(`/hub/playbooks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deletePlaybook: (id) => this.request(`/hub/playbooks/${id}`, { method: 'DELETE' }),
+
+    // Battlecards
+    listBattlecards: () => this.request('/hub/battlecards'),
+    createBattlecard: (data) => this.request('/hub/battlecards', { method: 'POST', body: JSON.stringify(data) }),
+    updateBattlecard: (id, data) => this.request(`/hub/battlecards/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteBattlecard: (id) => this.request(`/hub/battlecards/${id}`, { method: 'DELETE' }),
+
+    // Guardrails
+    getGuardrails: () => this.request('/hub/guardrails'),
+    saveGuardrails: (data) => this.request('/hub/guardrails', { method: 'POST', body: JSON.stringify(data) }),
+
+    // Tone
+    getTone: () => this.request('/hub/tone'),
+    setTone: (tone_id) => this.request('/hub/tone', { method: 'POST', body: JSON.stringify({ tone_id }) }),
+
+    // User-scoped Knowledge Base
+    listKbFiles: () => this.request('/hub/knowledge/files'),
+    uploadKbFile: (formData) => this.request('/hub/knowledge/upload', { method: 'POST', body: formData, isFormData: true }),
+    deleteKbFile: (id) => this.request(`/hub/knowledge/files/${id}`, { method: 'DELETE' }),
+  };
 }
 
 export const api = new APIClient();

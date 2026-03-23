@@ -1,119 +1,86 @@
-# LeadFlow AI - Product Requirements Document
-
-## Project Overview
-**LeadFlow AI** is a B2B SaaS intent-signal monitoring platform that monitors LinkedIn engagement signals, captures leads, and generates personalized AI-powered cold emails.
+# LeadFlow AI — Product Requirements Document
 
 ## Original Problem Statement
-- Build backend infrastructure for existing React/Vite frontend
-- Implement authentication (Email/Password + Google OAuth)
-- PostgreSQL with Supabase (RLS for multi-tenant)
-- 5 AI Worker Agents using Claude Sonnet 4.5
-- Secure webhook system for Apify scrapers
-- Real-time updates via Supabase Realtime
+Build a B2B SaaS application called "Leadflow AI" (an intent-signal monitoring platform).
+Connect a new FastAPI backend to an existing React/Vite UI. Multi-phase build culminating
+in a God Mode multi-agent orchestration platform.
 
-## User Choices
-- Database: External Supabase PostgreSQL (Option A - external DB)
-- Auth: Email/Password + Emergent Google OAuth
-- AI: Claude Sonnet 4.5 with user's own ANTHROPIC_API_KEY
-- Real-time: Supabase Realtime subscriptions (pending)
+## Core Architecture
+- **Frontend**: React + Vite + TailwindCSS + React Flow (DAG viz)
+- **Backend**: FastAPI + SQLAlchemy (Async) + Alembic
+- **Database**: External Supabase PostgreSQL + pgvector extension
+- **AI**: Anthropic Claude Sonnet 4.5 (user key), Gemini embeddings (3072-dim), Emergent Universal Key (multi-LLM)
+- **Auth**: JWT Email/Password + Emergent-managed Google OAuth
+
+---
 
 ## What's Been Implemented
 
-### Phase 1: Authentication & Database ✅
-- FastAPI backend with SQLAlchemy async + Alembic
-- PostgreSQL tables: users, tracked_signals, leads_raw, outreach_drafts, user_sessions
-- JWT authentication with session tokens + session persistence
-- Emergent-managed Google OAuth
-- Encrypted API key storage (Fernet) for Apify + Trigify/Unipile/Netrows
+### Phase 1–4 Core App (COMPLETE)
+- JWT Email/Password auth + Google OAuth login
+- Secure Apify webhook (`/api/webhook/apify`) with `x-apify-secret` validation
+- 5 AI Worker Agents: Warm Inbound, Topic Authority, Network Sniper, Trigger Event (Apify news), Competitor Intercept
+- Full frontend: Dashboard, Contacts, Copilot, Campaigns, Signals Agents, Unibox, Insights, Integrations, Command Center, Settings, Lead Database
+- Base44 SDK fully replaced with custom `client.js`
 
-### Phase 2: Secure Webhook ✅
-- POST /api/webhook/apify with x-apify-secret validation
-- Signal category routing (5 categories)
-- Background task processing
+### Phase 5 God Mode (COMPLETE)
+- 9 new DB tables: agent_configs, workflow_edges, tool_registry, knowledge_base, knowledge_embeddings (pgvector 3072-dim), execution_state, agent_tools_junction, agent_knowledge_junction, user_products
+- Backend services: orchestrator.py (AsyncAnthropic), embedding.py (Gemini), rag_retriever.py, tool_executor.py (REST/GraphQL/OAuth/Apify/Browser/SMTP), storage.py
+- Admin routes: full CRUD for agents, edges, tools, KB, execution logs, HITL approval, WebSocket streaming
+- Frontend admin: /admin with Agent Studio (React Flow DAG), Knowledge Base, Tool Registry, Execution Logs, Overview
+- Webhook dual-routing: God Mode GraphExecutor if user has agent_configs, else legacy workers fallback
+- Bug fixes: _get_entry_agent MultipleResultsFound (scalars().first()), KB search empty-table graceful return
 
-### Phase 3: AI Agents ✅
-- Warm Inbound Agent
-- Topic Authority Agent
-- Network Sniper Agent
-- Trigger Event Agent (with Apify news fetching)
-- Competitor Intercept Agent
+### Phase 6 AI Hub (COMPLETE — 2026-03-23)
+- **DB**: 4 new tables: user_offers, user_playbooks, user_battlecards, user_guardrails
+- **DB**: 6 new columns on tracked_signals: offer_id, playbook_id, tone_id, kb_file_ids, battlecard_ids, is_autopilot
+- **Backend**: `/api/hub/*` routes — full CRUD for all hub resources, user-scoped KB upload, tone preference, URL scrape → AI offer fill
+- **Backend**: workers.py — build_campaign_context() injects tone/offer/playbook/battlecards/guardrails into system prompt
+- **Backend**: webhook.py — passes active campaign config to legacy route_to_agent()
+- **Frontend**: /AiHub page with 6 tabs: Knowledge Base, Tone, Offers, Playbooks, Battlecards, Guardrails
+- **Frontend**: AgentWizard step 4 "AI Configuration" — dropdowns for offer/playbook/tone, multi-select KB files/battlecards, Autopilot/Copilot toggle
+- **Frontend**: Layout.jsx — AI Hub nav item added (BrainCircuit icon)
 
-### Phase 4: Frontend Wiring ✅ (March 2026)
-- Login/Register pages + Google OAuth
-- Protected routes with session persistence
-- Dashboard with real stats (leads, hot leads, drafts, sent)
-- InsightsPanel wired to /api/ai/insights (Claude-powered)
-- SystemHealthBadge wired to /api/health
-- Copilot page wired to /api/drafts (approve/remove drafts)
-- Contacts page wired to /api/leads (real data, fit status update)
-- Settings API tab wired to /api/user/settings (Trigify/Unipile/Netrows/Apify keys)
-- CommandCenter Monara AI wired to /api/ai/chat (Claude Sonnet 4.5)
-- Campaigns page wired to /api/signals (shows signal agents as campaigns)
-- Unibox wired to /api/drafts (shows outreach as conversations)
-- LeadDatabase UI intact (Netrows search requires API key - stubbed gracefully)
-- Removed ALL Base44 SDK references across 10 files
+---
 
-### New Backend Endpoints (March 2026) ✅
-- POST /api/leads - create lead manually
-- PATCH /api/leads/{id} - update fit_status/score
-- POST /api/ai/chat - Claude Sonnet chat
-- GET /api/ai/insights - dashboard insights
-- POST /api/ai/insights/generate - AI-powered insights refresh
-- GET/POST /api/user/settings - generic API key storage
+## Prioritized Backlog
 
-## Test Results (Iteration 3)
-- Backend: 100% (31/31 tests passed)
-- Frontend: 95% (all pages load, session persistence verified)
-- AI Chat: Claude Sonnet 4.5 verified working
-- Mocked: Netrows B2B search, Unibox send, email enrichment
+### P0 (Next Sprint)
+- Supabase Realtime WebSocket for dashboard auto-updates when drafts are generated
+- Wire real Apify scrapers to send payloads to /api/webhook/apify end-to-end test
+- Admin panel: manny@monara.vip needs is_admin=true in Supabase DB
 
-## Environment Variables (Production)
-```
-DATABASE_URL=postgresql://postgres.xxx:PASSWORD@aws-1-us-east-1.pooler.supabase.com:6543/postgres
-ANTHROPIC_API_KEY=sk-ant-...
-JWT_SECRET_KEY=<secure-random>
-APIFY_WEBHOOK_SECRET=<secure-random>
-ENCRYPTION_KEY=<fernet-key>
-```
+### P1
+- Supabase RLS policies for multi-tenant row-level isolation
+- Email sending integration (SMTP / SendGrid) to honor is_autopilot=true properly
+- Multi-LLM dynamic routing using Emergent Universal Key (Claude/GPT/Gemini selection per agent)
 
-## Pending / Next Tasks (Prioritized)
-
-### P0 (High Priority)
-- Supabase Realtime WebSocket integration - Dashboard auto-updates when AI Agent finishes a draft
-- Apify webhook payload parsing + MoE routing in /api/apify-webhook
-
-### P1 (Medium Priority)
-- Netrows API integration in LeadDatabase (requires user's Netrows API key)
-- Unibox real send functionality (requires Unipile API key)
-- Email enrichment in Contacts (requires enrichment provider)
-- Apify tool calling in Trigger Event Agent (workers.py)
-
-### P2 (Low Priority)
-- Supabase RLS policies for multi-tenant isolation
-- Email queuing with retry logic (Redis-backed)
+### P2 (Backlog)
+- Redis-backed email queue with retry logic
 - Settings → Company/Account/Security tabs
+- Seed default agent graph (5 legacy agents pre-loaded as agent_configs) for new users
+- Webhook → God Mode orchestrator HITL approval flow in the frontend Unibox
 
-## Architecture
-```
-/app/
-├── backend/
-│   ├── agents/workers.py (5 AI Claude Agents)
-│   ├── alembic/ (DB migrations)
-│   ├── models/base.py (Users, TrackedSignals, LeadsRaw, OutreachDrafts)
-│   ├── routes/
-│   │   ├── auth.py (login, register, google oauth)
-│   │   ├── leads.py (leads CRUD + user settings)
-│   │   ├── signals.py (signal agents CRUD)
-│   │   ├── webhook.py (Apify webhook)
-│   │   └── ai_chat.py (Claude chat + insights)
-│   ├── utils/auth.py (JWT, encryption)
-│   ├── database.py
-│   └── server.py
-└── frontend/
-    ├── src/
-    │   ├── api/client.js (API client)
-    │   ├── lib/AuthProvider.jsx (auth context)
-    │   ├── pages/ (Dashboard, Copilot, Contacts, Settings, etc.)
-    │   └── components/ (InsightsPanel, SystemHealthBadge, etc.)
-    └── .env (VITE_API_URL=)
-```
+---
+
+## Key API Endpoints
+- POST `/api/auth/register` / `/api/auth/login` / GET `/api/auth/me`
+- POST `/api/webhook/apify` (x-apify-secret header)
+- GET/POST/PATCH/DELETE `/api/signals/`
+- GET/POST/PATCH/DELETE `/api/hub/offers`
+- POST `/api/hub/offers/scrape`
+- GET/POST/PATCH/DELETE `/api/hub/playbooks`
+- GET/POST/PATCH/DELETE `/api/hub/battlecards`
+- GET/POST `/api/hub/guardrails`
+- GET/POST `/api/hub/tone`
+- GET `/api/hub/knowledge/files` / POST `/api/hub/knowledge/upload`
+- GET/POST/PATCH/DELETE `/api/admin/*` (is_admin required)
+- POST `/api/admin/orchestration/threads/simulate`
+- GET `/api/health`
+
+## Credentials / Keys
+- DATABASE_URL: Supabase connection pooler (in backend/.env)
+- ANTHROPIC_API_KEY: User-provided Claude key (in backend/.env)
+- GEMINI_API_KEY: User-provided Gemini key for embeddings (in backend/.env)
+- APIFY_WEBHOOK_SECRET: Webhook validation (in backend/.env)
+- JWT_SECRET_KEY: Token signing (in backend/.env)

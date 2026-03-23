@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "@/api/client";
-import { X, Check } from "lucide-react";
+import { X, Check, Zap, Bot } from "lucide-react";
 import { toast } from "sonner";
 import IntentSignalsAccordion from "@/components/signalagents/IntentSignalsAccordion";
 import IcpStep from "@/components/signalagents/IcpStep";
@@ -8,9 +8,10 @@ import LeadsStep from "@/components/signalagents/LeadsStep";
 import HowItWorksModal from "@/components/signalagents/HowItWorksModal";
 
 const steps = [
-  { num: 1, label: "ICP", sub: "Ideal Customer Profile" },
-  { num: 2, label: "Signals", sub: "Intent Signals" },
-  { num: 3, label: "Leads", sub: "Leads Management" },
+  { num: 1, label: "ICP",        sub: "Ideal Customer Profile" },
+  { num: 2, label: "Signals",    sub: "Intent Signals" },
+  { num: 3, label: "Leads",      sub: "Leads Management" },
+  { num: 4, label: "AI Config",  sub: "Hub Configuration" },
 ];
 
 const defaultForm = {
@@ -41,6 +42,13 @@ const defaultForm = {
   competitor_urls: [],
   lead_list_id: "",
   lead_list_name: "",
+  // AI Hub config
+  offer_id: null,
+  playbook_id: null,
+  tone_id: "",
+  kb_file_ids: [],
+  battlecard_ids: [],
+  is_autopilot: false,
 };
 
 // ── Step indicator in sidebar ─────────────────────────────────────────────────
@@ -122,12 +130,184 @@ function InlineAgentName({ name, onChange }) {
   );
 }
 
+// ── Step 4: AI Configuration ──────────────────────────────────────────────────
+const TONES_WIZARD = [
+  { id: "formal_professional",    label: "Formal & Professional" },
+  { id: "casual_friendly",        label: "Casual & Friendly" },
+  { id: "persuasive_results",     label: "Persuasive & Results-Driven" },
+  { id: "consultative_insightful",label: "Consultative & Insightful" },
+  { id: "provocative_challenger", label: "Provocative & Challenger" },
+  { id: "empathetic_solution",    label: "Empathetic & Solution-Oriented" },
+  { id: "direct_nononsense",      label: "Direct & No-Nonsense" },
+  { id: "witty_engaging",         label: "Witty & Engaging" },
+  { id: "enthusiastic_visionary", label: "Enthusiastic & Visionary" },
+  { id: "data_analytical",        label: "Data-Driven & Analytical" },
+];
+
+function AiConfigStep({ form, setForm, hubData }) {
+  const { offers, playbooks, battlecards, kbFiles } = hubData;
+
+  const toggleMulti = (field, id) => {
+    const curr = form[field] || [];
+    setForm(f => ({
+      ...f,
+      [field]: curr.includes(id) ? curr.filter(x => x !== id) : [...curr, id],
+    }));
+  };
+
+  return (
+    <div className="space-y-7" data-testid="ai-config-step">
+      <div>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">AI Configuration</h3>
+        <p className="text-sm text-gray-500">Attach your AI Hub resources to this campaign. When a lead comes in, these settings will be injected into the AI's context.</p>
+      </div>
+
+      {/* Offer */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Offer</label>
+        <select
+          value={form.offer_id || ""}
+          onChange={e => setForm(f => ({ ...f, offer_id: e.target.value || null }))}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+          data-testid="campaign-offer-select"
+        >
+          <option value="">— No offer attached —</option>
+          {offers.map(o => <option key={o.id} value={o.id}>{o.internal_name}</option>)}
+        </select>
+        {offers.length === 0 && <p className="text-xs text-gray-400 mt-1">Create offers in AI Hub → Offers</p>}
+      </div>
+
+      {/* Playbook */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Playbook</label>
+        <select
+          value={form.playbook_id || ""}
+          onChange={e => setForm(f => ({ ...f, playbook_id: e.target.value || null }))}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+          data-testid="campaign-playbook-select"
+        >
+          <option value="">— No playbook attached —</option>
+          {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        {playbooks.length === 0 && <p className="text-xs text-gray-400 mt-1">Create playbooks in AI Hub → Playbooks</p>}
+      </div>
+
+      {/* Tone */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tone of Voice</label>
+        <select
+          value={form.tone_id || ""}
+          onChange={e => setForm(f => ({ ...f, tone_id: e.target.value }))}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+          data-testid="campaign-tone-select"
+        >
+          <option value="">— Inherit workspace default —</option>
+          {TONES_WIZARD.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+        </select>
+      </div>
+
+      {/* KB Files */}
+      {kbFiles.length > 0 && (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Knowledge Base Files</label>
+          <p className="text-xs text-gray-400 mb-2">Select which uploaded files the AI can reference</p>
+          <div className="space-y-1.5 max-h-36 overflow-y-auto">
+            {kbFiles.map(f => (
+              <label key={f.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={(form.kb_file_ids || []).includes(f.id)}
+                  onChange={() => toggleMulti("kb_file_ids", f.id)}
+                  className="rounded accent-orange-500"
+                />
+                <span className="text-gray-700">{f.file_name}</span>
+                <span className="text-xs text-gray-400">({f.chunk_count} chunks)</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Battlecards */}
+      {battlecards.length > 0 && (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Battlecards</label>
+          <p className="text-xs text-gray-400 mb-2">Select objection handling strategies to attach</p>
+          <div className="space-y-1.5 max-h-36 overflow-y-auto">
+            {battlecards.map(b => (
+              <label key={b.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={(form.battlecard_ids || []).includes(b.id)}
+                  onChange={() => toggleMulti("battlecard_ids", b.id)}
+                  className="rounded accent-orange-500"
+                />
+                <span className="text-gray-700">{b.objection_type}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Autopilot / Copilot toggle */}
+      <div className="border rounded-xl p-4 bg-gray-50">
+        <p className="text-sm font-semibold text-gray-800 mb-3">Execution Mode</p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setForm(f => ({ ...f, is_autopilot: false }))}
+            data-testid="mode-copilot-btn"
+            className={`flex-1 flex items-center gap-2 p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+              !form.is_autopilot ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-200 text-gray-600 hover:border-gray-300"
+            }`}
+          >
+            <Bot className="w-4 h-4" />
+            <div className="text-left">
+              <div className="font-semibold">Copilot</div>
+              <div className="text-xs font-normal opacity-75">AI saves drafts for your approval</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setForm(f => ({ ...f, is_autopilot: true }))}
+            data-testid="mode-autopilot-btn"
+            className={`flex-1 flex items-center gap-2 p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+              form.is_autopilot ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-200 text-gray-600 hover:border-gray-300"
+            }`}
+          >
+            <Zap className="w-4 h-4" />
+            <div className="text-left">
+              <div className="font-semibold">Autopilot</div>
+              <div className="text-xs font-normal opacity-75">AI sends emails automatically</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Wizard ───────────────────────────────────────────────────────────────
 export default function AgentWizard({ editingAgent, initialForm, onSaved, onCancel }) {
   const [activeStep, setActiveStep] = useState(1);
   const [form, setForm] = useState(initialForm || defaultForm);
   const [saving, setSaving] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [hubData, setHubData] = useState({ offers: [], playbooks: [], battlecards: [], kbFiles: [] });
+
+  // Load hub data when reaching step 4
+  useEffect(() => {
+    if (activeStep === 4) {
+      Promise.all([
+        api.hub.listOffers(),
+        api.hub.listPlaybooks(),
+        api.hub.listBattlecards(),
+        api.hub.listKbFiles(),
+      ]).then(([offers, playbooks, battlecards, kbFiles]) => {
+        setHubData({ offers, playbooks, battlecards, kbFiles });
+      }).catch(() => {});
+    }
+  }, [activeStep]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -151,6 +331,12 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
         track_funding_events: form.track_funding_events,
         track_job_changes: form.track_job_changes,
         competitor_urls: form.competitor_urls,
+        offer_id: form.offer_id || null,
+        playbook_id: form.playbook_id || null,
+        tone_id: form.tone_id || null,
+        kb_file_ids: form.kb_file_ids || [],
+        battlecard_ids: form.battlecard_ids || [],
+        is_autopilot: form.is_autopilot || false,
       };
 
       if (editingAgent?.id) {
@@ -167,10 +353,14 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
     setSaving(false);
   };
 
-  const nextLabel = activeStep === 1 ? "Configure Signals ›" : activeStep === 2 ? "Configure Leads ›" : "Save ›";
+  const nextLabel =
+    activeStep === 1 ? "Configure Signals ›" :
+    activeStep === 2 ? "Configure Leads ›" :
+    activeStep === 3 ? "AI Configuration ›" :
+    "Save ›";
 
   const handleNext = () => {
-    if (activeStep < 3) setActiveStep(s => s + 1);
+    if (activeStep < 4) setActiveStep(s => s + 1);
     else handleSave();
   };
 
@@ -216,6 +406,7 @@ export default function AgentWizard({ editingAgent, initialForm, onSaved, onCanc
             {activeStep === 1 && <IcpStep form={form} setForm={setForm} />}
             {activeStep === 2 && <IntentSignalsAccordion form={form} setForm={setForm} />}
             {activeStep === 3 && <LeadsStep form={form} setForm={setForm} />}
+            {activeStep === 4 && <AiConfigStep form={form} setForm={setForm} hubData={hubData} />}
           </div>
         </div>
       </div>

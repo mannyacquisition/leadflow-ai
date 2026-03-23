@@ -98,8 +98,17 @@ async def process_lead_async(lead_id: str, user_id: str, signal_category: str):
                     await db.commit()
                 print(f"God Mode processed lead {lead_id} — status: {state.status}")
             else:
-                # ── Legacy fallback ───────────────────────────────────────────
-                draft = await route_to_agent(signal_category, lead, db, user)
+                # ── Legacy fallback — look up campaign for hub context ─────────
+                from models import TrackedSignal
+                campaign_result = await db.execute(
+                    select(TrackedSignal).where(
+                        TrackedSignal.user_id == user_id,
+                        TrackedSignal.status == "active",
+                    ).limit(1)
+                )
+                campaign = campaign_result.scalars().first()
+
+                draft = await route_to_agent(signal_category, lead, db, user, campaign=campaign)
                 if draft:
                     lead.processed = True
                     await db.commit()

@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Load environment variables
 load_dotenv(Path(__file__).parent / '.env')
 
-from routes import auth_router, signals_router, webhook_router, leads_router, ai_router, admin_router, rag_router, orchestration_router
+from routes import auth_router, signals_router, webhook_router, leads_router, ai_router, admin_router, rag_router, orchestration_router, hub_router
 
 
 @asynccontextmanager
@@ -77,6 +77,7 @@ app.include_router(ai_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(rag_router, prefix="/api")
 app.include_router(orchestration_router, prefix="/api")
+app.include_router(hub_router, prefix="/api")
 
 
 @app.get("/api/health")

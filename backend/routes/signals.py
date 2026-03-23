@@ -15,6 +15,38 @@ from routes.auth import get_current_user
 router = APIRouter(prefix="/signals", tags=["Signals"])
 
 
+# ─── Helper ───────────────────────────────────────────────────────────────────
+
+def _to_resp(s: "TrackedSignal") -> "SignalResponse":
+    return SignalResponse(
+        id=s.id, user_id=s.user_id, name=s.name, status=s.status,
+        target_job_titles=s.target_job_titles or [],
+        target_locations=s.target_locations or [],
+        target_industries=s.target_industries or [],
+        company_sizes=s.company_sizes or [],
+        excluded_keywords=s.excluded_keywords or [],
+        lead_matching_mode=s.lead_matching_mode or 80,
+        linkedin_page_url=s.linkedin_page_url,
+        linkedin_profile_url=s.linkedin_profile_url,
+        track_profile_visitors=s.track_profile_visitors or False,
+        company_followers_url=s.company_followers_url,
+        keywords=s.keywords or [],
+        influencer_urls=s.influencer_urls or [],
+        track_top_profiles=s.track_top_profiles or False,
+        track_funding_events=s.track_funding_events or False,
+        track_job_changes=s.track_job_changes or False,
+        competitor_urls=s.competitor_urls or [],
+        offer_id=s.offer_id,
+        playbook_id=s.playbook_id,
+        tone_id=s.tone_id,
+        kb_file_ids=s.kb_file_ids or [],
+        battlecard_ids=s.battlecard_ids or [],
+        is_autopilot=s.is_autopilot or False,
+        created_at=s.created_at,
+        updated_at=s.updated_at,
+    )
+
+
 # ─── Schemas ─────────────────────────────────────────────────────────────────────
 
 class KeywordItem(BaseModel):
@@ -53,6 +85,14 @@ class SignalCreateRequest(BaseModel):
     # Competitors
     competitor_urls: List[str] = []
 
+    # AI Hub config (Phase 6)
+    offer_id: Optional[str] = None
+    playbook_id: Optional[str] = None
+    tone_id: Optional[str] = None
+    kb_file_ids: List[str] = []
+    battlecard_ids: List[str] = []
+    is_autopilot: bool = False
+
 class SignalUpdateRequest(SignalCreateRequest):
     pass
 
@@ -77,6 +117,13 @@ class SignalResponse(BaseModel):
     track_funding_events: bool
     track_job_changes: bool
     competitor_urls: List[str]
+    # AI Hub config
+    offer_id: Optional[str] = None
+    playbook_id: Optional[str] = None
+    tone_id: Optional[str] = None
+    kb_file_ids: List[str] = []
+    battlecard_ids: List[str] = []
+    is_autopilot: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -96,33 +143,7 @@ async def list_signals(
     )
     signals = result.scalars().all()
     
-    return [
-        SignalResponse(
-            id=s.id,
-            user_id=s.user_id,
-            name=s.name,
-            status=s.status,
-            target_job_titles=s.target_job_titles or [],
-            target_locations=s.target_locations or [],
-            target_industries=s.target_industries or [],
-            company_sizes=s.company_sizes or [],
-            excluded_keywords=s.excluded_keywords or [],
-            lead_matching_mode=s.lead_matching_mode or 80,
-            linkedin_page_url=s.linkedin_page_url,
-            linkedin_profile_url=s.linkedin_profile_url,
-            track_profile_visitors=s.track_profile_visitors or False,
-            company_followers_url=s.company_followers_url,
-            keywords=s.keywords or [],
-            influencer_urls=s.influencer_urls or [],
-            track_top_profiles=s.track_top_profiles or False,
-            track_funding_events=s.track_funding_events or False,
-            track_job_changes=s.track_job_changes or False,
-            competitor_urls=s.competitor_urls or [],
-            created_at=s.created_at,
-            updated_at=s.updated_at
-        )
-        for s in signals
-    ]
+    return [_to_resp(s) for s in signals]
 
 
 @router.post("/", response_model=SignalResponse)
@@ -151,36 +172,18 @@ async def create_signal(
         track_top_profiles=data.track_top_profiles,
         track_funding_events=data.track_funding_events,
         track_job_changes=data.track_job_changes,
-        competitor_urls=data.competitor_urls
+        competitor_urls=data.competitor_urls,
+        offer_id=data.offer_id,
+        playbook_id=data.playbook_id,
+        tone_id=data.tone_id,
+        kb_file_ids=data.kb_file_ids,
+        battlecard_ids=data.battlecard_ids,
+        is_autopilot=data.is_autopilot,
     )
     db.add(signal)
     await db.commit()
     await db.refresh(signal)
-    
-    return SignalResponse(
-        id=signal.id,
-        user_id=signal.user_id,
-        name=signal.name,
-        status=signal.status,
-        target_job_titles=signal.target_job_titles or [],
-        target_locations=signal.target_locations or [],
-        target_industries=signal.target_industries or [],
-        company_sizes=signal.company_sizes or [],
-        excluded_keywords=signal.excluded_keywords or [],
-        lead_matching_mode=signal.lead_matching_mode or 80,
-        linkedin_page_url=signal.linkedin_page_url,
-        linkedin_profile_url=signal.linkedin_profile_url,
-        track_profile_visitors=signal.track_profile_visitors or False,
-        company_followers_url=signal.company_followers_url,
-        keywords=signal.keywords or [],
-        influencer_urls=signal.influencer_urls or [],
-        track_top_profiles=signal.track_top_profiles or False,
-        track_funding_events=signal.track_funding_events or False,
-        track_job_changes=signal.track_job_changes or False,
-        competitor_urls=signal.competitor_urls or [],
-        created_at=signal.created_at,
-        updated_at=signal.updated_at
-    )
+    return _to_resp(signal)
 
 
 @router.put("/{signal_id}", response_model=SignalResponse)
@@ -219,35 +222,17 @@ async def update_signal(
     signal.track_funding_events = data.track_funding_events
     signal.track_job_changes = data.track_job_changes
     signal.competitor_urls = data.competitor_urls
+    signal.offer_id = data.offer_id
+    signal.playbook_id = data.playbook_id
+    signal.tone_id = data.tone_id
+    signal.kb_file_ids = data.kb_file_ids
+    signal.battlecard_ids = data.battlecard_ids
+    signal.is_autopilot = data.is_autopilot
     signal.updated_at = datetime.now(timezone.utc)
     
     await db.commit()
     await db.refresh(signal)
-    
-    return SignalResponse(
-        id=signal.id,
-        user_id=signal.user_id,
-        name=signal.name,
-        status=signal.status,
-        target_job_titles=signal.target_job_titles or [],
-        target_locations=signal.target_locations or [],
-        target_industries=signal.target_industries or [],
-        company_sizes=signal.company_sizes or [],
-        excluded_keywords=signal.excluded_keywords or [],
-        lead_matching_mode=signal.lead_matching_mode or 80,
-        linkedin_page_url=signal.linkedin_page_url,
-        linkedin_profile_url=signal.linkedin_profile_url,
-        track_profile_visitors=signal.track_profile_visitors or False,
-        company_followers_url=signal.company_followers_url,
-        keywords=signal.keywords or [],
-        influencer_urls=signal.influencer_urls or [],
-        track_top_profiles=signal.track_top_profiles or False,
-        track_funding_events=signal.track_funding_events or False,
-        track_job_changes=signal.track_job_changes or False,
-        competitor_urls=signal.competitor_urls or [],
-        created_at=signal.created_at,
-        updated_at=signal.updated_at
-    )
+    return _to_resp(signal)
 
 
 @router.delete("/{signal_id}")

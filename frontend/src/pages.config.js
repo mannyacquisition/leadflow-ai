@@ -58,6 +58,7 @@ import Settings from './pages/Settings';
 import Integrations from './pages/Integrations';
 import CommandCenter from './pages/CommandCenter';
 import LeadDatabase from './pages/LeadDatabase';
+import AiHub from './pages/AiHub';
 import __Layout from './Layout.jsx';
 
 
@@ -73,6 +74,7 @@ export const PAGES = {
     "Integrations": Integrations,
     "CommandCenter": CommandCenter,
     "LeadDatabase": LeadDatabase,
+    "AiHub": AiHub,
 }
 
 export const pagesConfig = {
