@@ -155,7 +155,8 @@ async def list_agents(user: User = Depends(get_admin_user), db: AsyncSession = D
             "fallback_model": a.fallback_model, "system_prompt": a.system_prompt,
             "temperature": a.temperature, "rag_weights": a.rag_weights,
             "is_active": a.is_active, "position_x": a.position_x,
-            "position_y": a.position_y, "created_at": a.created_at.isoformat(),
+            "position_y": a.position_y,
+            "created_at": a.created_at.isoformat() if a.created_at else None,
         }
         for a in agents
     ]
@@ -256,7 +257,7 @@ async def list_tools(user: User = Depends(get_admin_user), db: AsyncSession = De
             "integration_type": t.integration_type, "endpoint_url": t.endpoint_url,
             "openapi_schema": t.openapi_schema, "is_active": t.is_active,
             "has_auth": bool(t.auth_headers_encrypted), "has_oauth": bool(t.oauth_config_encrypted),
-            "created_at": t.created_at.isoformat(),
+            "created_at": t.created_at.isoformat() if t.created_at else None,
         }
         for t in tools
     ]
