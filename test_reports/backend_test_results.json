@@ -1,56 +1,279 @@
 {
-  "timestamp": "2026-03-23T15:12:47.389931",
-  "total_tests": 8,
-  "passed_tests": 7,
-  "success_rate": 87.5,
+  "timestamp": "2026-03-23T15:54:48.728240",
+  "total_tests": 15,
+  "passed_tests": 15,
+  "success_rate": 100.0,
   "test_results": [
     {
       "test": "Health Check",
       "success": true,
-      "details": "Status: 200, Response: {\"status\": \"healthy\", \"service\": \"LeadFlow AI Backend\", \"version\": \"1.0.0\"}",
-      "timestamp": "2026-03-23T15:12:47.380525"
+      "details": "Status: 200, Response: {\n  \"status\": \"healthy\",\n  \"service\": \"LeadFlow AI Backend\",\n  \"version\": \"1.0.0\"\n}...",
+      "timestamp": "2026-03-23T15:54:45.463235",
+      "response_data": {
+        "status": "healthy",
+        "service": "LeadFlow AI Backend",
+        "version": "1.0.0"
+      }
     },
     {
       "test": "Environment Status",
       "success": true,
-      "details": "Status: 200, Response: {\"database_configured\": false, \"anthropic_configured\": false, \"webhook_secret_configured\": true, \"jwt_configured\": true}",
-      "timestamp": "2026-03-23T15:12:47.381921"
+      "details": "Status: 200, Response: {\n  \"database_configured\": true,\n  \"anthropic_configured\": true,\n  \"webhook_secret_configured\": true,\n  \"jwt_configured\": true\n}...",
+      "timestamp": "2026-03-23T15:54:45.505282",
+      "response_data": {
+        "database_configured": true,
+        "anthropic_configured": true,
+        "webhook_secret_configured": true,
+        "jwt_configured": true
+      }
     },
     {
       "test": "User Registration",
       "success": true,
-      "details": "Status: 500, Response: Internal Server Error",
-      "timestamp": "2026-03-23T15:12:47.383205"
+      "details": "Status: 200, Response: {\n  \"user\": {\n    \"id\": \"5b010199-34ee-46f9-8306-7a919e7b33fb\",\n    \"email\": \"test_user_155445@example.com\",\n    \"full_name\": \"Test User\",\n    \"picture\": null,\n    \"auth_provider\": \"email\",\n    \"creat...",
+      "timestamp": "2026-03-23T15:54:46.114270",
+      "response_data": {
+        "user": {
+          "id": "5b010199-34ee-46f9-8306-7a919e7b33fb",
+          "email": "test_user_155445@example.com",
+          "full_name": "Test User",
+          "picture": null,
+          "auth_provider": "email",
+          "created_at": "2026-03-23T15:54:45.846501Z"
+        },
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YjAxMDE5OS0zNGVlLTQ2ZjktODMwNi03YTkxOWU3YjMzZmIiLCJlbWFpbCI6InRlc3RfdXNlcl8xNTU0NDVAZXhhbXBsZS5jb20iLCJleHAiOjE3NzQ4ODYwODYsImlhdCI6MTc3NDI4MTI4Nn0.FRQg2t7rfbizYdhpgWnO1bmnlzprc3e6bWt0DAWGqq4"
+      }
     },
     {
       "test": "User Login",
       "success": true,
-      "details": "Status: 500, Response: Internal Server Error",
-      "timestamp": "2026-03-23T15:12:47.384439"
+      "details": "Status: 200, Response: {\n  \"user\": {\n    \"id\": \"5b010199-34ee-46f9-8306-7a919e7b33fb\",\n    \"email\": \"test_user_155445@example.com\",\n    \"full_name\": \"Test User\",\n    \"picture\": null,\n    \"auth_provider\": \"email\",\n    \"creat...",
+      "timestamp": "2026-03-23T15:54:46.538414",
+      "response_data": {
+        "user": {
+          "id": "5b010199-34ee-46f9-8306-7a919e7b33fb",
+          "email": "test_user_155445@example.com",
+          "full_name": "Test User",
+          "picture": null,
+          "auth_provider": "email",
+          "created_at": "2026-03-23T15:54:45.846501Z"
+        },
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YjAxMDE5OS0zNGVlLTQ2ZjktODMwNi03YTkxOWU3YjMzZmIiLCJlbWFpbCI6InRlc3RfdXNlcl8xNTU0NDVAZXhhbXBsZS5jb20iLCJleHAiOjE3NzQ4ODYwODYsImlhdCI6MTc3NDI4MTI4Nn0.FRQg2t7rfbizYdhpgWnO1bmnlzprc3e6bWt0DAWGqq4"
+      }
     },
     {
       "test": "Get Current User (No Auth)",
-      "success": false,
-      "details": "Status: 500, Response: Internal Server Error",
-      "timestamp": "2026-03-23T15:12:47.385461"
+      "success": true,
+      "details": "Status: 401, Response: {\n  \"detail\": \"Not authenticated\"\n}...",
+      "timestamp": "2026-03-23T15:54:46.580221",
+      "response_data": {
+        "detail": "Not authenticated"
+      }
     },
     {
-      "test": "Test /signals",
+      "test": "Get Current User (With Auth)",
       "success": true,
-      "details": "Status: 500, Response: Internal Server Error",
-      "timestamp": "2026-03-23T15:12:47.387730"
+      "details": "Status: 200, Response: {\n  \"id\": \"5b010199-34ee-46f9-8306-7a919e7b33fb\",\n  \"email\": \"test_user_155445@example.com\",\n  \"full_name\": \"Test User\",\n  \"picture\": null,\n  \"auth_provider\": \"email\",\n  \"created_at\": \"2026-03-23T15:5...",
+      "timestamp": "2026-03-23T15:54:46.751248",
+      "response_data": {
+        "id": "5b010199-34ee-46f9-8306-7a919e7b33fb",
+        "email": "test_user_155445@example.com",
+        "full_name": "Test User",
+        "picture": null,
+        "auth_provider": "email",
+        "created_at": "2026-03-23T15:54:45.846501Z"
+      }
     },
     {
-      "test": "Test /leads",
+      "test": "List Signals (Empty)",
       "success": true,
-      "details": "Status: 500, Response: Internal Server Error",
-      "timestamp": "2026-03-23T15:12:47.388785"
+      "details": "Status: 200, Response: []...",
+      "timestamp": "2026-03-23T15:54:46.990306"
     },
     {
-      "test": "Test /leads/stats",
+      "test": "Create Signal Agent",
       "success": true,
-      "details": "Status: 500, Response: Internal Server Error",
-      "timestamp": "2026-03-23T15:12:47.389791"
+      "details": "Status: 200, Response: {\n  \"id\": \"8fb226f3-daf5-4b6d-bbb3-15f11c3f7f0f\",\n  \"user_id\": \"5b010199-34ee-46f9-8306-7a919e7b33fb\",\n  \"name\": \"Test Signal Agent\",\n  \"status\": \"active\",\n  \"target_job_titles\": [\n    \"CEO\",\n    \"CTO...",
+      "timestamp": "2026-03-23T15:54:47.348365",
+      "response_data": {
+        "id": "8fb226f3-daf5-4b6d-bbb3-15f11c3f7f0f",
+        "user_id": "5b010199-34ee-46f9-8306-7a919e7b33fb",
+        "name": "Test Signal Agent",
+        "status": "active",
+        "target_job_titles": [
+          "CEO",
+          "CTO"
+        ],
+        "target_locations": [
+          "San Francisco",
+          "New York"
+        ],
+        "target_industries": [
+          "Technology",
+          "SaaS"
+        ],
+        "company_sizes": [
+          "1-10",
+          "11-50"
+        ],
+        "excluded_keywords": [
+          "spam",
+          "test"
+        ],
+        "lead_matching_mode": 85,
+        "linkedin_page_url": "https://linkedin.com/company/test",
+        "linkedin_profile_url": "https://linkedin.com/in/test",
+        "track_profile_visitors": true,
+        "company_followers_url": null,
+        "keywords": [
+          {
+            "text": "AI",
+            "track_mode": "All"
+          },
+          {
+            "text": "machine learning",
+            "track_mode": "All"
+          }
+        ],
+        "influencer_urls": [
+          "https://linkedin.com/in/influencer1"
+        ],
+        "track_top_profiles": true,
+        "track_funding_events": false,
+        "track_job_changes": true,
+        "competitor_urls": [
+          "https://linkedin.com/company/competitor"
+        ],
+        "created_at": "2026-03-23T15:54:47.087738Z",
+        "updated_at": "2026-03-23T15:54:47.087743Z"
+      }
+    },
+    {
+      "test": "List Signals (With Data)",
+      "success": true,
+      "details": "Status: 200, Response: [\n  {\n    \"id\": \"8fb226f3-daf5-4b6d-bbb3-15f11c3f7f0f\",\n    \"user_id\": \"5b010199-34ee-46f9-8306-7a919e7b33fb\",\n    \"name\": \"Test Signal Agent\",\n    \"status\": \"active\",\n    \"target_job_titles\": [\n     ...",
+      "timestamp": "2026-03-23T15:54:47.548297",
+      "response_data": [
+        {
+          "id": "8fb226f3-daf5-4b6d-bbb3-15f11c3f7f0f",
+          "user_id": "5b010199-34ee-46f9-8306-7a919e7b33fb",
+          "name": "Test Signal Agent",
+          "status": "active",
+          "target_job_titles": [
+            "CEO",
+            "CTO"
+          ],
+          "target_locations": [
+            "San Francisco",
+            "New York"
+          ],
+          "target_industries": [
+            "Technology",
+            "SaaS"
+          ],
+          "company_sizes": [
+            "1-10",
+            "11-50"
+          ],
+          "excluded_keywords": [
+            "spam",
+            "test"
+          ],
+          "lead_matching_mode": 85,
+          "linkedin_page_url": "https://linkedin.com/company/test",
+          "linkedin_profile_url": "https://linkedin.com/in/test",
+          "track_profile_visitors": true,
+          "company_followers_url": null,
+          "keywords": [
+            {
+              "text": "AI",
+              "track_mode": "All"
+            },
+            {
+              "text": "machine learning",
+              "track_mode": "All"
+            }
+          ],
+          "influencer_urls": [
+            "https://linkedin.com/in/influencer1"
+          ],
+          "track_top_profiles": true,
+          "track_funding_events": false,
+          "track_job_changes": true,
+          "competitor_urls": [
+            "https://linkedin.com/company/competitor"
+          ],
+          "created_at": "2026-03-23T15:54:47.087738Z",
+          "updated_at": "2026-03-23T15:54:47.087743Z"
+        }
+      ]
+    },
+    {
+      "test": "Update Signal Status",
+      "success": true,
+      "details": "Status: 200, Response: {\n  \"message\": \"Signal status updated to paused\"\n}...",
+      "timestamp": "2026-03-23T15:54:47.843224",
+      "response_data": {
+        "message": "Signal status updated to paused"
+      }
+    },
+    {
+      "test": "Get Lead Stats",
+      "success": true,
+      "details": "Status: 200, Response: {\n  \"total_leads\": 0,\n  \"hot_leads\": 0,\n  \"contacted\": 0,\n  \"replies\": 0\n}...",
+      "timestamp": "2026-03-23T15:54:48.274238",
+      "response_data": {
+        "total_leads": 0,
+        "hot_leads": 0,
+        "contacted": 0,
+        "replies": 0
+      }
+    },
+    {
+      "test": "List Leads",
+      "success": true,
+      "details": "Status: 200, Response: []...",
+      "timestamp": "2026-03-23T15:54:48.507219"
+    },
+    {
+      "test": "Invalid Endpoint",
+      "success": true,
+      "details": "Status: 404, Response: {\n  \"detail\": \"Not Found\"\n}...",
+      "timestamp": "2026-03-23T15:54:48.549215",
+      "response_data": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "test": "Invalid Token",
+      "success": true,
+      "details": "Status: 401, Response: {\n  \"detail\": \"Invalid token\"\n}...",
+      "timestamp": "2026-03-23T15:54:48.685230",
+      "response_data": {
+        "detail": "Invalid token"
+      }
+    },
+    {
+      "test": "Invalid Registration Data",
+      "success": true,
+      "details": "Status: 422, Response: {\n  \"detail\": [\n    {\n      \"type\": \"value_error\",\n      \"loc\": [\n        \"body\",\n        \"email\"\n      ],\n      \"msg\": \"value is not a valid email address: An email address must have an @-sign.\",\n   ...",
+      "timestamp": "2026-03-23T15:54:48.728198",
+      "response_data": {
+        "detail": [
+          {
+            "type": "value_error",
+            "loc": [
+              "body",
+              "email"
+            ],
+            "msg": "value is not a valid email address: An email address must have an @-sign.",
+            "input": "not-an-email",
+            "ctx": {
+              "reason": "An email address must have an @-sign."
+            }
+          }
+        ]
+      }
     }
   ]
 }
