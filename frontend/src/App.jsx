@@ -7,6 +7,12 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthProvider';
 import Login from '@/pages/Login';
 import AuthCallback from '@/pages/AuthCallback';
+import AdminShell from '@/components/admin/AdminShell';
+import AdminOverview from '@/pages/admin/Overview';
+import KnowledgeBase from '@/pages/admin/KnowledgeBase';
+import ToolRegistry from '@/pages/admin/ToolRegistry';
+import AgentStudio from '@/pages/admin/AgentStudio';
+import ExecutionLogs from '@/pages/admin/ExecutionLogs';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -20,7 +26,6 @@ const ProtectedRoute = ({ children, currentPageName }) => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
   const location = useLocation();
 
-  // Show loading while checking auth
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white">
@@ -29,7 +34,6 @@ const ProtectedRoute = ({ children, currentPageName }) => {
     );
   }
 
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/Login" state={{ from: location }} replace />;
   }
@@ -44,7 +48,6 @@ const ProtectedRoute = ({ children, currentPageName }) => {
 const AppRouter = () => {
   const location = useLocation();
   
-  // Check URL fragment for session_id (OAuth callback)
   if (location.hash?.includes('session_id=')) {
     return <AuthCallback />;
   }
@@ -54,8 +57,15 @@ const AppRouter = () => {
       {/* Public routes */}
       <Route path="/Login" element={<Login />} />
       <Route path="/AuthCallback" element={<AuthCallback />} />
+
+      {/* Admin routes */}
+      <Route path="/admin" element={<AdminShell><AdminOverview /></AdminShell>} />
+      <Route path="/admin/knowledge" element={<AdminShell><KnowledgeBase /></AdminShell>} />
+      <Route path="/admin/tools" element={<AdminShell><ToolRegistry /></AdminShell>} />
+      <Route path="/admin/studio" element={<AdminShell><AgentStudio /></AdminShell>} />
+      <Route path="/admin/logs" element={<AdminShell><ExecutionLogs /></AdminShell>} />
       
-      {/* Protected routes */}
+      {/* Protected app routes */}
       <Route path="/" element={
         <ProtectedRoute currentPageName={mainPageKey}>
           <MainPage />
@@ -93,3 +103,4 @@ function App() {
 }
 
 export default App
+

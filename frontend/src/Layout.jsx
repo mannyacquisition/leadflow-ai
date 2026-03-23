@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/AuthProvider";
 import {
   LayoutDashboard, Bot, Megaphone, Users, Zap,
   Inbox, BarChart3, Puzzle, Settings, Bell, Gift,
-  ChevronDown, LogOut, User, Terminal, Database
+  ChevronDown, LogOut, User, Terminal, Database, Shield
 } from "lucide-react";
 import MonaraPanel from "@/components/monara/MonaraPanel";
 
@@ -77,6 +77,13 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Bottom section */}
         <div className="px-3 pb-3 border-t border-white/10 pt-3 space-y-1">
+          {user?.is_admin && (
+            <Link to="/admin" className="flex items-center gap-3 px-3 py-2 rounded-lg text-purple-400 text-sm hover:bg-purple-500/10 transition-colors">
+              <Shield className="w-4 h-4" />
+              <span>God Mode</span>
+              <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-purple-600/30 text-purple-300">Admin</span>
+            </Link>
+          )}
           <div className="flex items-center gap-3 px-3 py-2 text-gray-400 text-sm cursor-pointer hover:text-white">
             <Bell className="w-4 h-4" />
             <span>Notifications</span>

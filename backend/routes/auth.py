@@ -42,6 +42,7 @@ class UserResponse(BaseModel):
     full_name: str | None
     picture: str | None
     auth_provider: str
+    is_admin: bool = False
     created_at: datetime
 
 class AuthResponse(BaseModel):
@@ -139,6 +140,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             full_name=user.full_name,
             picture=user.picture,
             auth_provider=user.auth_provider,
+            is_admin=user.is_admin,
             created_at=user.created_at
         ),
         token=token
@@ -188,6 +190,7 @@ async def login(data: LoginRequest, response: Response, db: AsyncSession = Depen
             full_name=user.full_name,
             picture=user.picture,
             auth_provider=user.auth_provider,
+            is_admin=user.is_admin,
             created_at=user.created_at
         ),
         token=token
@@ -288,7 +291,8 @@ async def get_me(user: User = Depends(get_current_user)):
         full_name=user.full_name,
         picture=user.picture,
         auth_provider=user.auth_provider,
-        created_at=user.created_at
+        is_admin=user.is_admin,
+        created_at=user.created_at,
     )
 
 
