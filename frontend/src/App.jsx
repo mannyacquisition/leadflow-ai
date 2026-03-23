@@ -20,16 +20,6 @@ const ProtectedRoute = ({ children, currentPageName }) => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
   const location = useLocation();
 
-  // DEMO MODE: Skip auth check temporarily
-  const DEMO_MODE = true;
-  if (DEMO_MODE) {
-    return (
-      <LayoutWrapper currentPageName={currentPageName}>
-        {children}
-      </LayoutWrapper>
-    );
-  }
-
   // Show loading while checking auth
   if (isLoadingAuth) {
     return (
