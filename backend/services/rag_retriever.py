@@ -21,8 +21,16 @@ async def search_embeddings(
     """
     Cosine similarity search on knowledge_embeddings via pgvector.
     Returns top_k chunks with score, text, and metadata.
+    Returns empty list gracefully if table is empty or embedding fails.
     """
-    query_vec = embed_query(query)
+    if not query or not query.strip():
+        return []
+
+    try:
+        query_vec = embed_query(query)
+    except Exception:
+        return []
+
     vec_str = "[" + ",".join(str(v) for v in query_vec) + "]"
 
     # Build WHERE clause
@@ -58,8 +66,11 @@ async def search_embeddings(
         LIMIT :top_k
     """)
 
-    result = await db.execute(sql, params)
-    rows = result.fetchall()
+    try:
+        result = await db.execute(sql, params)
+        rows = result.fetchall()
+    except Exception:
+        return []
 
     return [
         {

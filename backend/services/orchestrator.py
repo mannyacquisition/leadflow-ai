@@ -215,7 +215,7 @@ class GraphExecutor:
             )
         )
         result = await self.db.execute(stmt)
-        agent = result.scalar_one_or_none()
+        agent = result.scalars().first()
         if agent:
             return agent
 
@@ -235,7 +235,7 @@ class GraphExecutor:
                 (WorkflowEdge.signal_category == None)
             )
         result2 = await self.db.execute(stmt2)
-        return result2.scalar_one_or_none()
+        return result2.scalars().first()
 
     async def _get_next_agents(
         self, source_agent_id: str, condition_type: str, user_id: str
