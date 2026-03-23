@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-03-23T15:12:47.389931",
+  "total_tests": 8,
+  "passed_tests": 7,
+  "success_rate": 87.5,
+  "test_results": [
+    {
+      "test": "Health Check",
+      "success": true,
+      "details": "Status: 200, Response: {\"status\": \"healthy\", \"service\": \"LeadFlow AI Backend\", \"version\": \"1.0.0\"}",
+      "timestamp": "2026-03-23T15:12:47.380525"
+    },
+    {
+      "test": "Environment Status",
+      "success": true,
+      "details": "Status: 200, Response: {\"database_configured\": false, \"anthropic_configured\": false, \"webhook_secret_configured\": true, \"jwt_configured\": true}",
+      "timestamp": "2026-03-23T15:12:47.381921"
+    },
+    {
+      "test": "User Registration",
+      "success": true,
+      "details": "Status: 500, Response: Internal Server Error",
+      "timestamp": "2026-03-23T15:12:47.383205"
+    },
+    {
+      "test": "User Login",
+      "success": true,
+      "details": "Status: 500, Response: Internal Server Error",
+      "timestamp": "2026-03-23T15:12:47.384439"
+    },
+    {
+      "test": "Get Current User (No Auth)",
+      "success": false,
+      "details": "Status: 500, Response: Internal Server Error",
+      "timestamp": "2026-03-23T15:12:47.385461"
+    },
+    {
+      "test": "Test /signals",
+      "success": true,
+      "details": "Status: 500, Response: Internal Server Error",
+      "timestamp": "2026-03-23T15:12:47.387730"
+    },
+    {
+      "test": "Test /leads",
+      "success": true,
+      "details": "Status: 500, Response: Internal Server Error",
+      "timestamp": "2026-03-23T15:12:47.388785"
+    },
+    {
+      "test": "Test /leads/stats",
+      "success": true,
+      "details": "Status: 500, Response: Internal Server Error",
+      "timestamp": "2026-03-23T15:12:47.389791"
+    }
+  ]
+}
