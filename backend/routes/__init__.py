@@ -7,3 +7,4 @@ from routes.admin import router as admin_router
 from routes.rag import router as rag_router
 from routes.orchestration import router as orchestration_router
 from routes.hub import router as hub_router
+from routes.monara import router as monara_router

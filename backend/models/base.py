@@ -44,6 +44,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     
+    chat_sessions = relationship('ChatSession', back_populates='user', cascade='all, delete-orphan')
     tracked_signals = relationship('TrackedSignal', back_populates='user', cascade='all, delete-orphan')
     leads_raw = relationship('LeadRaw', back_populates='user', cascade='all, delete-orphan')
     outreach_drafts = relationship('OutreachDraft', back_populates='user', cascade='all, delete-orphan')
@@ -149,6 +150,7 @@ class AgentConfig(Base):
     fallback_model = Column(String(100), nullable=True)
     system_prompt = Column(Text, nullable=True)
     temperature = Column(Float, default=0.7)
+    output_type = Column(String(50), default='email_draft')  # email_draft, chat_response, report
     rag_weights = Column(JSONB, default=lambda: {"global": 0.3, "user": 0.5, "product": 0.2})
     is_active = Column(Boolean, default=True)
     position_x = Column(Float, default=0.0)
@@ -191,11 +193,17 @@ class ToolRegistry(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     integration_type = Column(String(50), nullable=False)
-    # rest, graphql, mcp, webhook, direct_sql, browser, smtp, oauth2
+    # rest, graphql, mcp, webhook, direct_sql, browser, smtp, oauth2, apify, internal
     endpoint_url = Column(Text, nullable=True)
     auth_headers_encrypted = Column(Text, nullable=True)
     openapi_schema = Column(JSONB, nullable=True)
     oauth_config_encrypted = Column(Text, nullable=True)
+    # Gap 2: user-credential passthrough for personal API keys
+    use_user_credential = Column(Boolean, default=False)
+    credential_key = Column(String(100), nullable=True)   # e.g. "apify_api_token"
+    # Gap 8: internal tool handler
+    handler_name = Column(String(100), nullable=True)     # e.g. "create_campaign"
+    requires_confirmation = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=utc_now)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
@@ -296,6 +304,24 @@ class ExecutionState(Base):
 
     user = relationship('User', back_populates='execution_states')
     current_agent = relationship('AgentConfig', foreign_keys=[current_agent_id], back_populates='execution_states')
+
+
+class ChatSession(Base):
+    """Monara persistent chat session with full message history"""
+    __tablename__ = 'chat_sessions'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    agent_config_id = Column(String(36), ForeignKey('agent_configs.id', ondelete='SET NULL'), nullable=True)
+    title = Column(String(255), default='New Chat')
+    messages = Column(JSONB, default=list)           # display messages: [{role, content, type}]
+    api_history = Column(JSONB, default=list)        # full Claude API message history (incl. tool_use)
+    pending_tool_call = Column(JSONB, nullable=True) # staged destructive action awaiting confirmation
+    model_used = Column(String(100), default='claude-sonnet-4-5-20250929')
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    user = relationship('User', back_populates='chat_sessions')
 
 
 # ─── Phase 6 AI Hub Tables ────────────────────────────────────────────────────

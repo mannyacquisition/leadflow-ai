@@ -8,6 +8,7 @@ import {
   ChevronDown, LogOut, User, Terminal, Database, Shield, BrainCircuit
 } from "lucide-react";
 import MonaraPanel from "@/components/monara/MonaraPanel";
+import { useMonaraSync } from "@/hooks/useMonaraSync";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
@@ -28,6 +29,9 @@ export default function Layout({ children, currentPageName }) {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [monaraPanelOpen, setMonaraPanelOpen] = useState(false);
+
+  // Gap 10: open the mutation WebSocket for the logged-in user
+  useMonaraSync(user?.id);
 
   const handleLogout = async () => {
     await logout();

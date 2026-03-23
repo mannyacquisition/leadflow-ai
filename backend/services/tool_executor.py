@@ -27,14 +27,36 @@ def _decrypt_headers(encrypted: Optional[str]) -> dict:
         return {}
 
 
-async def execute_tool(tool: dict, input_data: dict) -> dict:
+async def execute_tool(
+    tool: dict,
+    input_data: dict,
+    user_context: Optional[dict] = None,
+) -> dict:
     """
     Execute a tool from the registry.
     tool: dict from ToolRegistry row
     input_data: dynamic parameters from agent
+    user_context: {"user_id": str, "user": User model} for credential passthrough
     Returns: {"success": bool, "output": any, "error": str | None}
     """
     integration_type = (tool.get("integration_type") or "rest").lower()
+
+    # Gap 2: use_user_credential passthrough
+    if tool.get("use_user_credential") and user_context:
+        cred_key = tool.get("credential_key", "")
+        user_obj = user_context.get("user")
+        if cred_key == "apify_api_token" and user_obj:
+            try:
+                from utils.auth import decrypt_api_key
+                raw_token = decrypt_api_key(user_obj.apify_api_token_encrypted or "")
+                # Inject token into a copy of tool dict so original is unchanged
+                tool = dict(tool)
+                import json as _j
+                tool["auth_headers_encrypted"] = None
+                # We store the token directly for _execute_apify to pick up
+                tool["_resolved_token"] = raw_token
+            except Exception:
+                pass
 
     try:
         if integration_type == "rest":
@@ -51,6 +73,9 @@ async def execute_tool(tool: dict, input_data: dict) -> dict:
             return await _execute_rest(tool, input_data, method="POST")
         elif integration_type == "apify":
             return await _execute_apify(tool, input_data)
+        elif integration_type == "internal":
+            # Dispatched via internal_tool_executor — should not reach here directly
+            return {"success": False, "output": None, "error": "Internal tools must be called via MonaraEngine"}
         else:
             return {"success": False, "output": None, "error": f"Unknown integration type: {integration_type}"}
     except Exception as e:
@@ -221,9 +246,10 @@ async def _execute_apify(tool: dict, input_data: dict) -> dict:
     if not actor_id:
         return {"success": False, "output": None, "error": "Apify actor ID (endpoint_url) not set"}
 
-    # Extract token from Authorization header or bare "token" key
+    # Support use_user_credential passthrough (Gap 2)
     token = (
-        headers.get("token")
+        tool.get("_resolved_token")
+        or headers.get("token")
         or headers.get("x-apify-token")
         or headers.get("Authorization", "").replace("Bearer ", "")
     )

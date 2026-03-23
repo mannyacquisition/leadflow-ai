@@ -510,11 +510,31 @@ class GraphExecutor:
             next_agents = await self._get_next_agents(agent.id, "on_success", user_id)
             current_agents.extend(next_agents)
 
-        # All agents done
+        # All agents done — Gap 5: auto-create OutreachDraft if output_type = email_draft
         state.status = "completed"
         state.final_output = last_output
         if not dry_run:
             state.updated_at = datetime.now(timezone.utc)
+            # Auto-create OutreachDraft when the entry agent is an email-writing agent
+            if (
+                entry_agent
+                and getattr(entry_agent, "output_type", "email_draft") == "email_draft"
+                and state.lead_id
+                and last_output
+                and last_output != initial_prompt
+            ):
+                try:
+                    from models import OutreachDraft
+                    draft = OutreachDraft(
+                        user_id=state.user_id,
+                        lead_id=state.lead_id,
+                        content=last_output,
+                        subject="[AI Draft]",
+                        status="draft",
+                    )
+                    db.add(draft)
+                except Exception as draft_err:
+                    print(f"[orchestrator] OutreachDraft creation failed: {draft_err}")
             await db.commit()
 
         await self._notify(thread_id, {
