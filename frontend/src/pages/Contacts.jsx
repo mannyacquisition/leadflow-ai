@@ -260,7 +260,7 @@ export default function Contacts() {
       {/* Pagination */}
       <div className="px-6 py-3 border-t bg-white flex items-center justify-between">
         <span className="text-sm text-gray-500">
-          Showing {((page - 1) * LEADS_PER_PAGE) + 1} to {Math.min(page * LEADS_PER_PAGE, total)} of {total} results
+          Showing {total === 0 ? 0 : ((page - 1) * LEADS_PER_PAGE) + 1} to {Math.min(page * LEADS_PER_PAGE, total)} of {total} results
         </span>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">Show:</span>
