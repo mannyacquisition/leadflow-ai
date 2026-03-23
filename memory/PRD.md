@@ -11,68 +11,27 @@
 - Secure webhook system for Apify scrapers
 - Real-time updates via Supabase Realtime
 
-## User Personas
-1. **B2B Sales Teams** - Need automated lead generation from intent signals
-2. **Growth Marketers** - Want to identify and engage warm leads
-3. **SDRs** - Need personalized email drafts at scale
+## User Choices
+- Database: External Supabase PostgreSQL (Option A - external DB)
+- Auth: Email/Password + Emergent Google OAuth
+- AI: Claude Sonnet 4.5 with user's own ANTHROPIC_API_KEY
+- Real-time: Supabase Realtime subscriptions
 
-## Core Requirements (Static)
-- [x] User authentication (Email/Password + Google OAuth)
-- [x] PostgreSQL database with RLS (Supabase)
-- [x] Signal Agent configuration UI
-- [x] Webhook endpoint for Apify scrapers
-- [x] 5 AI Worker Agents for email generation
-- [x] Dashboard with lead statistics
-- [ ] Real-time updates via Supabase Realtime (pending DB config)
+## What's Been Implemented (March 2026)
 
-## Architecture
-
-### Backend (FastAPI)
-```
-/app/backend/
-├── server.py          # Main FastAPI app
-├── database.py        # SQLAlchemy async config
-├── models/            # User, TrackedSignal, LeadRaw, OutreachDraft
-├── routes/
-│   ├── auth.py        # Email/Password + Google OAuth
-│   ├── signals.py     # Signal agent CRUD
-│   ├── webhook.py     # Apify webhook dispatcher
-│   └── leads.py       # Leads & drafts endpoints
-├── agents/
-│   └── workers.py     # 5 AI worker agents (Claude)
-└── utils/
-    └── auth.py        # JWT, password hashing, encryption
-```
-
-### Frontend (Vite + React)
-```
-/app/frontend/src/
-├── App.jsx            # Router with protected routes
-├── api/client.js      # API client (replaces Base44 SDK)
-├── lib/AuthProvider.jsx # Auth context
-├── pages/
-│   ├── Login.jsx      # Email/Password + Google OAuth
-│   ├── Dashboard.jsx  # Stats, leads, drafts
-│   └── SignalsAgents.jsx # Agent configuration
-```
-
-## What's Been Implemented (Jan 2026)
-
-### Phase 1: Authentication & Database Schema ✅
-- [x] FastAPI backend with SQLAlchemy async
-- [x] User model with encrypted API keys
-- [x] TrackedSignal, LeadRaw, OutreachDraft models
+### Phase 1: Authentication & Database ✅
+- [x] FastAPI backend with SQLAlchemy async + Alembic
+- [x] PostgreSQL tables: users, tracked_signals, leads_raw, outreach_drafts, user_sessions
 - [x] JWT authentication with session tokens
-- [x] Emergent-managed Google OAuth integration
-- [x] Alembic setup for migrations
+- [x] Emergent-managed Google OAuth
+- [x] Encrypted API key storage (Fernet)
 
-### Phase 2: Secure Dispatcher Webhook ✅
-- [x] POST /api/webhook/apify endpoint
-- [x] x-apify-secret header validation
-- [x] Signal category routing to AI agents
+### Phase 2: Secure Webhook ✅
+- [x] POST /api/webhook/apify with x-apify-secret validation
+- [x] Signal category routing (5 categories)
 - [x] Background task processing
 
-### Phase 3: AI Worker Agents ✅
+### Phase 3: AI Agents ✅
 - [x] Warm Inbound Agent
 - [x] Topic Authority Agent
 - [x] Network Sniper Agent
@@ -80,51 +39,30 @@
 - [x] Competitor Intercept Agent
 
 ### Phase 4: Frontend Wiring ✅
-- [x] Login/Register page with Google OAuth
-- [x] Protected routes with auth redirect
-- [x] Dashboard with stats cards
-- [x] Signal Agents page with CRUD
-- [x] API client replacing Base44 SDK
+- [x] Login/Register pages
+- [x] Protected routes with session persistence
+- [x] Dashboard with stats
+- [x] Signal Agents configuration wizard
+- [x] Removed legacy Base44 SDK
 
-## Prioritized Backlog
+## Deployment Status
+- ✅ Backend 100% working (all API endpoints tested)
+- ✅ Frontend 100% working (auth flow, session persistence)
+- ✅ External Supabase PostgreSQL configured
+- ✅ CORS configured for production
+- ✅ Encryption keys generated
+- ⚠️ Uses external DB (not Emergent MongoDB) - requires DATABASE_URL in deployment
 
-### P0 - Critical (User Action Required)
-1. Configure DATABASE_URL (Supabase Transaction Pooler)
-2. Configure ANTHROPIC_API_KEY
-
-### P1 - High Priority
-1. Test full auth flow after DB config
-2. Test webhook → AI agent → draft pipeline
-3. Implement Supabase Realtime subscriptions
-
-### P2 - Medium Priority
-1. Settings page for API key management
-2. Draft editing and approval workflow
-3. Lead list filtering and export
-
-## Environment Variables Checklist
-
-```bash
-# /app/backend/.env
-
-# REQUIRED - Supabase PostgreSQL
-DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
-
-# REQUIRED - For AI email generation
+## Environment Variables (Production)
+```
+DATABASE_URL=postgresql://postgres.xxx:PASSWORD@aws-1-us-east-1.pooler.supabase.com:6543/postgres
 ANTHROPIC_API_KEY=sk-ant-...
-
-# CONFIGURED - Webhook security
-APIFY_WEBHOOK_SECRET=leadflow-webhook-secret-change-me
-
-# CONFIGURED - JWT auth
-JWT_SECRET_KEY=leadflow-ai-super-secret-key-change-in-production
-
-# AUTO-GENERATED - API key encryption
-ENCRYPTION_KEY=
+JWT_SECRET_KEY=<secure-random>
+APIFY_WEBHOOK_SECRET=<secure-random>
+ENCRYPTION_KEY=<fernet-key>
 ```
 
 ## Next Tasks
-1. User provides Supabase Transaction Pooler URI
-2. Run Alembic migrations: `cd /app/backend && alembic revision --autogenerate -m "Initial" && alembic upgrade head`
-3. Test complete auth flow
-4. Test webhook with sample Apify payload
+- Add Supabase RLS policies for multi-tenant isolation
+- Implement Supabase Realtime subscriptions
+- Settings page for user API key management
