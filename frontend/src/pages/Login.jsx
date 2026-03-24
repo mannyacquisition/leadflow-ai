@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, register, navigateToLogin } = useAuth();
+  const { login, register, navigateToLogin, demoLogin } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -32,6 +33,19 @@ export default function Login() {
       toast.error(error.message || 'Authentication failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+    try {
+      await demoLogin();
+      toast.success('Welcome to the demo!');
+      navigate('/Dashboard');
+    } catch (error) {
+      toast.error('Demo login failed: ' + error.message);
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -61,6 +75,27 @@ export default function Login() {
           <p className="text-gray-500 text-center mb-6">
             {isLogin ? 'Sign in to continue to your dashboard' : 'Get started with LeadFlow AI'}
           </p>
+
+          {/* Demo Account Button */}
+          <button
+            onClick={handleDemoLogin}
+            disabled={demoLoading}
+            data-testid="demo-login-btn"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-white font-semibold mb-4 transition-all disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, #ff5a1f 0%, #e84d0e 100%)' }}
+          >
+            <Zap className="w-5 h-5" />
+            {demoLoading ? 'Accessing…' : 'Access Demo Account'}
+          </button>
+
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-400">or sign in with your account</span>
+            </div>
+          </div>
 
           {/* Google OAuth Button */}
           <button

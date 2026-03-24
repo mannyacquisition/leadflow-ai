@@ -88,6 +88,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const demoLogin = async () => {
+    try {
+      const result = await api.request('/auth/demo', { method: 'POST' });
+      api.setToken(result.token);
+      setUser(result.user);
+      setIsAuthenticated(true);
+      setAuthError(null);
+      return result;
+    } catch (error) {
+      setAuthError({ type: 'demo_failed', message: error.message });
+      throw error;
+    }
+  };
+
   const logout = async () => {
     await api.auth.logout();
     setUser(null);
@@ -107,6 +121,7 @@ export const AuthProvider = ({ children }) => {
       authError,
       login,
       register,
+      demoLogin,
       handleGoogleCallback,
       logout,
       navigateToLogin,

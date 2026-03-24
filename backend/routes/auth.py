@@ -43,7 +43,7 @@ class UserResponse(BaseModel):
     picture: str | None
     auth_provider: str
     is_admin: bool = False
-    created_at: datetime
+    created_at: datetime | None = None
 
 class AuthResponse(BaseModel):
     user: UserResponse
@@ -280,6 +280,41 @@ async def google_callback(data: GoogleCallbackRequest, response: Response, db: A
         },
         "token": session_token
     }
+
+
+@router.post("/demo")
+async def demo_login(response: Response, db: AsyncSession = Depends(get_db)):
+    """Instant demo login — no credentials required. Creates the demo user if absent."""
+    DEMO_EMAIL = "demo@leadflow.ai"
+
+    result = await db.execute(select(User).where(User.email == DEMO_EMAIL))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        user = User(
+            email=DEMO_EMAIL,
+            full_name="Demo User",
+            auth_provider="demo",
+            password_hash=hash_password("not-used-demo-only"),
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    token = create_jwt_token(user.id, user.email)
+
+    return AuthResponse(
+        user=UserResponse(
+            id=user.id,
+            email=user.email,
+            full_name=user.full_name,
+            picture=user.picture,
+            auth_provider=user.auth_provider,
+            is_admin=user.is_admin,
+            created_at=user.created_at,
+        ),
+        token=token,
+    )
 
 
 @router.get("/me", response_model=UserResponse)
